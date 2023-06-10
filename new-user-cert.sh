@@ -47,7 +47,7 @@ openssl genrsa -out "${CERTDIR}/${CERT}.key" 2048
 CONFIG="${CERTDIR}/${CERT}/user-cert.conf"
 
 if [ ! -d $(dirname ${CONFIG}) ];then
-    mkdir $(dirname ${CONFIG})
+    mkdir $(dirname ${CONFIG}) || exit 1
 fi
 
 cat >${CONFIG} <<EOT

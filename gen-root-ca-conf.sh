@@ -22,7 +22,7 @@ default_days            = 3650
 default_crl_days        = 30
 default_md              = sha256
 preserve                = no
-x509_extensions		= server_cert
+x509_extensions		      = server_cert
 policy                  = policy_anything
 [ policy_anything ]
 countryName             = optional
@@ -46,10 +46,10 @@ cat >$CONFIG <<EOT
 default_ca	= CA_default		# The default ca section
 
 [ CA_default ]
-dir						= \$CA
+dir						= ${CA}
 [ req ]
 default_bits				= 2048
-default_keyfile			= $CA/ca.key
+default_keyfile			= \$dir/ca.key
 distinguished_name	= req_distinguished_name
 x509_extensions			= v3_ca
 string_mask					= nombstr

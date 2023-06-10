@@ -1,7 +1,7 @@
 #!/bin/sh
 ##
 ##  new-root-ca.sh - create the root CA
-##  Copyright (c) 2000 Yeak Nai Siew, All Rights Reserved. 
+##  Copyright (c) 2000 Yeak Nai Siew, All Rights Reserved.
 ##
 
 BASE=$(realpath $(dirname $0))
@@ -9,16 +9,19 @@ cd ${BASE}
 
 # Create root CA directory
 CA="${BASE}/CA"
-if [ ! -d ${CA}]; then
-	mkdir "${CA}"
+if [ ! -d ${CA} ]; then
+	mkdir "${CA}" || exit 1
 	chmod g-rwx,o-rwx "${CA}"
+	mkdir "${CA}/ca.db.certs"
+	echo "01" > "${CA}/ca.db.serial"
+	touch "${CA}/ca.db.index"
 fi
 
 # Create the master CA key. This should be done once.
 if [ ! -f "${CA}/ca.key" ]; then
 	echo "No Root CA key round. Generating one"
-	dd if=/dev/urandom of="${CA}/random-bits" bs=2K count=1
-	openssl genrsa -des3 -out "${CA}/ca.key" 2048 -rand "${CA}/random-bits"
+	dd if=/dev/urandom of="${CA}/random-bits" bs=4K count=1 || exit 1
+	openssl genrsa -des3 -out "${CA}/ca.key" -rand "${CA}/random-bits" || exit 1
 	echo ""
 fi
 
@@ -30,9 +33,26 @@ fi
 
 CONFIG="${BASE}/config/root-ca.conf"
 cat >$CONFIG <<EOT
+[ ca ]
+default_ca              = default_CA
+[ default_CA ]
+dir                     = ${CA}
+certs                   = \$dir
+new_certs_dir           = \$dir/ca.db.certs
+database                = \$dir/ca.db.index
+serial                  = \$dir/ca.db.serial
+RANDFILE                = \$dir/random-bits
+certificate             = \$dir/ca.crt
+private_key             = \$dir/ca.key
+default_days            = 3650
+default_crl_days        = 30
+default_md              = sha256
+preserve                = no
+
 [ req ]
-default_bits				= 2048
-default_keyfile			= \$CA/ca.key
+dir                     = ${CA}
+default_bits						= 2048
+default_keyfile					= \$dir/ca.key
 distinguished_name	= req_distinguished_name
 x509_extensions			= v3_ca
 string_mask					= nombstr
