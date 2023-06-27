@@ -12,6 +12,11 @@ fi
 BASE=$(realpath $(dirname $0))
 cd "${BASE}"
 
+KEYBITS=4096
+HASHALGO="sha256"
+VALID_DAYS=3650
+RANDOM_SRC=/dev/urandom
+
 # Create the key. This should be done once per cert.
 CERT=$1
 shift
@@ -40,7 +45,7 @@ if [ -f "${CERTDIR}/${CERT}.key" ]; then
 fi
 
 echo "No ${CERT}.key round. Generating one"
-openssl genrsa -out "${CERTDIR}/${CERT}.key" 2048
+openssl genrsa -out "${CERTDIR}/${CERT}.key" ${KEYBITS}
 
 # Fill the necessary certificate data
 
@@ -52,7 +57,7 @@ fi
 
 cat >${CONFIG} <<EOT
 [ req ]
-default_bits				= 2048
+default_bits				= ${KEYBITS}
 default_keyfile			= server.key
 distinguished_name	= req_distinguished_name
 string_mask					= nombstr

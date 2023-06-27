@@ -1,7 +1,7 @@
 #!/bin/sh
 ##
 ##  sign-server-cert.sh - sign using our root CA the server cert
-##  Copyright (c) 2000 Yeak Nai Siew, All Rights Reserved. 
+##  Copyright (c) 2000 Yeak Nai Siew, All Rights Reserved.
 ##
 
 if [ $# -lt 1 ]; then
@@ -11,6 +11,11 @@ fi
 
 BASE=$(realpath $(dirname $0))
 cd "${BASE}"
+
+KEYBITS=4096
+HASHALGO="sha256"
+VALID_DAYS=3650
+RANDOM_SRC=/dev/urandom
 
 CERT=$1
 shift
@@ -67,7 +72,7 @@ cat >$CONFIG <<EOT
 [ ca ]
 default_ca              = default_CA
 [ default_CA ]
-dir                     = $CA
+dir                     = ${CA}
 certs                   = \$dir
 new_certs_dir           = \$dir/ca.db.certs
 database                = \$dir/ca.db.index
@@ -75,9 +80,9 @@ serial                  = \$dir/ca.db.serial
 RANDFILE                = \$dir/random-bits
 certificate             = \$dir/ca.crt
 private_key             = \$dir/ca.key
-default_days            = 3650
+default_days            = ${VALID_DAYS}
 default_crl_days        = 30
-default_md              = sha256
+default_md              = ${HASHALGO}
 preserve                = no
 x509_extensions					= server_cert
 policy                  = policy_anything
@@ -124,7 +129,7 @@ do
   openssl verify -CAfile "${CA}/ca.crt" "${CERTDIR}/${CERT}.crt"
 done
 
-#  cleanup after SSLeay 
+#  cleanup after SSLeay
 #rm -f $CONFIG
 #rm -f $CERT.csr
 rm -f $CA/ca.db.serial.old
