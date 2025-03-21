@@ -96,6 +96,18 @@ The `new-sub-ca.sh` script dynamically calculates the `pathlen` for sub-CAs base
 
    Replace `<user-email>` with the email address of the user certificate to be renewed.
 
+### Certificate Expiry Notification
+
+1. **Check for Expiring Certificates**:
+   Run `check-expiry.sh` to check for certificates nearing expiration and send email notifications:
+   ```sh
+   ./check-expiry.sh
+   ```
+
+   - The script checks the root CA, sub-CAs, and issued certificates.
+   - By default, it sends notifications for certificates expiring within 30 days.
+   - Update the `EMAIL` variable in the script to set the administrator's email address.
+
 ## Directory Structure
 
 ### Root CA
@@ -210,6 +222,23 @@ sub-CAs/
    ```sh
    ./renew-user-cert.sh user@example.com
    ```
+
+### Certificate Expiry Notification
+1. Check for expiring certificates:
+   ```sh
+   ./check-expiry.sh
+   ```
+
+   - Example output:
+     ```
+     Checking root CA certificate...
+     Certificate Root CA is expiring in 25 days (Dec 15 23:59:59 2023 GMT).
+     Checking sub-CA certificates...
+     Certificate Sub-CA intermediate-ca is expiring in 10 days (Dec 1 23:59:59 2023 GMT).
+     Checking issued certificates...
+     Certificate www.example.com is expiring in 5 days (Nov 26 23:59:59 2023 GMT).
+     Certificate expiry check completed.
+     ```
 
 ## Notes
 
