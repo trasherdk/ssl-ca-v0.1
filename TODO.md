@@ -1,20 +1,20 @@
 # TODO - Planned Improvements and Missing Features
 
 ## Checklist
-- [x] 1. Certificate Expiry Notification
-- [ ] 2. CRL Management
-- [ ] 3. Audit Logs
-- [ ] 4. Script for Viewing Certificate Details
-- [ ] 5. Support for OCSP (Online Certificate Status Protocol)
-- [ ] 6. Enhanced Error Handling
-- [ ] 7. Documentation for Security Best Practices
-- [ ] 8. Script for Revoking Certificates by Serial Number
-- [ ] 9. Automated Testing
-- [ ] 10. PKCS#12 Password Management
-- [ ] 11. Periodic CRL Automation
-- [ ] 12. Configurable Expiry Thresholds for Notifications
+- [ ] 1. Certificate Expiry Notification and Thresholds
+- [x] 2. Sub-CA Pathlen Constraints
+- [ ] 3. CRL Management
+- [ ] 4. Audit Logs
+- [ ] 5. Script for Viewing Certificate Details
+- [ ] 6. Support for OCSP (Online Certificate Status Protocol)
+- [ ] 7. Enhanced Error Handling
+- [ ] 8. Documentation for Security Best Practices
+- [ ] 9. Script for Revoking Certificates by Serial Number
+- [ ] 10. Automated Testing
+- [ ] 11. PKCS#12 Password Management
+- [ ] 12. Periodic CRL Automation
 
-## 1. Certificate Expiry Notification
+## 1. Certificate Expiry Notification and Thresholds
 - Add a script to check for certificates nearing expiration.
 - Notify the administrator for both root CA, sub-CAs, and issued certificates.
 - **Status**: Partially implemented.
@@ -22,7 +22,15 @@
     - Add configurable thresholds for expiry notifications.
     - Improve error handling and logging.
 
-## 2. CRL Management
+## 2. Sub-CA Pathlen Constraints
+- Enable normal Sub-CAs to create other Sub-CAs by removing pathlen constraint.
+- Support restricted Sub-CAs that cannot create further Sub-CAs.
+- **Status**: Completed.
+  - Implemented in root CA configuration.
+  - Added support for both normal and restricted Sub-CAs.
+  - All tests passing.
+
+## 3. CRL Management
 - Create a script to automatically regenerate the Certificate Revocation List (CRL) periodically for both root CA and sub-CAs.
 - Ensure revoked certificates are properly distributed.
 - **Status**: Partially implemented.
@@ -56,8 +64,49 @@
 - Add a script to revoke certificates by their serial number for more flexibility.
 
 ## 9. Automated Testing
-- Add a script to test the entire CA setup, including creating, signing, revoking, and renewing certificates.
-- Ensure all scripts work as expected.
+- [x] Create Root CA test script with comprehensive verification
+- [x] Create Sub-CA test script
+- [ ] Create server certificate test script
+- [ ] Create user certificate test script
+- [ ] Create CRL test script
+- [ ] Create PKCS#12 test script
+
+### 9.1 Core Functionality Tests
+- Test certificate chain validation
+- Test CRL generation and validation
+- Test certificate renewal processes
+- Test PKCS#12 file generation and password handling
+- Test sub-CA creation with different pathlen constraints
+
+### 9.2 Error Handling Tests
+- Test invalid certificate signing requests
+- Test revocation of already-revoked certificates
+- Test expired certificate handling
+- Test invalid password scenarios
+- Test malformed configuration files
+
+### 9.3 Integration Tests
+- Test complete workflow from root CA to end-entity certificates
+- Test certificate renewal workflow
+- Test CRL update and distribution process
+- Test expiry notification system
+
+### 9.4 Security Tests
+- Test private key protection mechanisms
+- Test permission settings on sensitive files
+- Test password strength requirements
+- Test certificate constraints enforcement
+
+### 9.5 Performance Tests
+- Test CRL generation with large number of certificates
+- Test concurrent certificate operations
+- Test system behavior under load
+
+### 9.6 Compatibility Tests
+- Test certificates with different key sizes
+- Test various certificate extensions
+- Test OpenSSL version compatibility
+- Test browser/client compatibility for generated certificates
 
 ## 10. PKCS#12 Password Management
 - Enhance the `p12.sh` script to allow administrators to specify or generate strong passwords for `.p12` files.

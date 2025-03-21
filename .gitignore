@@ -4,3 +4,4 @@ certs-revoked/*
 config/*
 CRL/*
 test-environment
+sub-CAs

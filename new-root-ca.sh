@@ -38,38 +38,82 @@ fi
 
 CONFIG="${BASE}/config/root-ca.conf"
 cat >$CONFIG <<EOT
+[ ca ]
+default_ca = CA_default
+
+[ CA_default ]
+dir                      = ${CA}
+certs                    = \$dir/ca.db.certs
+database                 = \$dir/ca.db.index
+new_certs_dir            = \$dir/ca.db.certs
+certificate              = \$dir/ca.crt
+serial                   = \$dir/ca.db.serial
+private_key              = \$dir/ca.key
+RANDOM                   = /dev/urandom
+default_days             = 3650
+default_md               = sha256
+preserve                 = no
+policy                   = policy_match
+default_bits             = ${KEYBITS}
+email_in_dn              = yes
+rand_serial              = yes
+copy_extensions          = copy
+
+[ policy_match ]
+countryName              = match
+stateOrProvinceName      = match
+localityName             = match
+organizationName         = match
+organizationalUnitName   = optional
+commonName               = supplied
+emailAddress             = optional
+
 [ req ]
-dir                     = ${CA}
-default_bits						= ${KEYBITS}
-default_keyfile					= \$dir/ca.key
-distinguished_name			= req_distinguished_name
-x509_extensions					= v3_ca
-string_mask							= nombstr
-req_extensions					= v3_req
+dir                      = ${CA}
+default_bits             = ${KEYBITS}
+default_keyfile          = \$dir/ca.key
+distinguished_name       = req_distinguished_name
+x509_extensions          = v3_ca
+string_mask              = nombstr
+req_extensions           = v3_req
 [ req_distinguished_name ]
-countryName							= Country Name (2 letter code)
-countryName_default			= DK
-countryName_min					= 2
-countryName_max					= 2
-stateOrProvinceName	= State or Province Name (full name)
-stateOrProvinceName_default	= Denmark
-localityName				= Locality Name (eg, city)
-localityName_default	= Copenhagen
-0.organizationName		= Organization Name (eg, company)
-0.organizationName_default	= Trader Internet
-organizationalUnitName	= Organizational Unit Name (eg, section)
-organizationalUnitName_default	= Certification Services Division
-commonName					= Common Name (eg, MD Root CA)
-commonName_max			= 64
-commonName_default	= Trader Internet Root CA
-emailAddress				= Email Address
-emailAddress_default	= hostmaster@fumlersoft.dk
-emailAddress_max		= 40
+countryName              = Country Name (2 letter code)
+countryName_default      = DK
+countryName_min          = 2
+countryName_max          = 2
+stateOrProvinceName      = State or Province Name (full name)
+stateOrProvinceName_default = Denmark
+localityName             = Locality Name (eg, city)
+localityName_default     = Copenhagen
+0.organizationName       = Organization Name (eg, company)
+0.organizationName_default = Trader Internet
+organizationalUnitName   = Organizational Unit Name (eg, section)
+organizationalUnitName_default = Certification Services Division
+commonName               = Common Name (eg, MD Root CA)
+commonName_max           = 64
+commonName_default       = Trader Internet Root CA
+emailAddress             = Email Address
+emailAddress_default     = hostmaster@fumlersoft.dk
+emailAddress_max         = 40
 [ v3_ca ]
-basicConstraints		= critical,CA:true
-subjectKeyIdentifier	= hash
+basicConstraints         = critical,CA:true
+subjectKeyIdentifier     = hash
+authorityKeyIdentifier   = keyid:always,issuer:always
+keyUsage                 = critical,keyCertSign,cRLSign
+
+[ v3_sub_ca ]
+basicConstraints         = critical,CA:true
+subjectKeyIdentifier     = hash
+authorityKeyIdentifier   = keyid:always,issuer:always
+keyUsage                 = critical,keyCertSign,cRLSign
+
+[ v3_restricted_sub_ca ]
+basicConstraints         = critical,CA:false
+subjectKeyIdentifier     = hash
+authorityKeyIdentifier   = keyid:always,issuer:always
+keyUsage                 = critical,digitalSignature,keyEncipherment
 [ v3_req ]
-nsCertType					= objsign,email,server
+nsCertType               = objsign,email,server
 EOT
 
 echo "Self-sign the root CA..."

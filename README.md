@@ -7,21 +7,41 @@ This project provides a set of shell scripts to manage a simple Certificate Auth
 ## Features
 
 - **Root CA Management**: Create and manage a self-signed root CA.
-- **Sub-CA Management**: Create sub-CAs for specific purposes, such as managing certificates for a particular website or service. Sub-CAs operate independently of the root CA and can optionally create further sub-CAs or be restricted to issuing only user/host certificates.
+- **Sub-CA Management**: Create two types of sub-CAs:
+  - **Normal Sub-CAs**: Can issue both certificates and further sub-CAs, with no pathlen constraint.
+  - **Restricted Sub-CAs**: Can only issue end-entity certificates (CA:FALSE), cannot create further sub-CAs.
 - **Server Certificates**: Generate and sign certificates for web servers.
 - **User Certificates**: Generate and sign certificates for individual users (e.g., for S/MIME or email encryption).
 - **Certificate Revocation**: Revoke certificates and manage a Certificate Revocation List (CRL).
 - **PKCS#12 Packaging**: Package user certificates into `.p12` files for easy import into browsers or email clients.
 - **Configuration Management**: Automatically generate OpenSSL configuration files for various operations.
 
-## Pathlen and Certificate Chain Depth
+## Sub-CA Types and Certificate Chain Depth
 
-The `pathlen` constraint in the `basicConstraints` extension determines the maximum depth of the certificate chain below the current certificate:
-- If the root CA does not have a `pathlen` constraint, there is no restriction on the depth of the chain, and sub-CAs will inherit this unrestricted behavior unless explicitly configured otherwise.
-- If the root CA or any intermediate CA has a `pathlen` constraint, sub-CAs created under it will have their `pathlen` decremented by 1, limiting the chain depth accordingly.
-- A `pathlen` of `0` means the certificate cannot issue any further sub-CAs.
+The system supports two types of Sub-CAs with different capabilities:
 
-The `new-sub-ca.sh` script dynamically calculates the `pathlen` for sub-CAs based on the parent CA's certificate. Additionally, the `no-sub-ca` option can be used to explicitly restrict a sub-CA from issuing further sub-CAs.
+### Normal Sub-CAs
+- Created without the `no-sub-ca` option
+- Have `CA:TRUE` in their basicConstraints
+- No pathlen constraint, allowing them to create further sub-CAs
+- Can issue both end-entity certificates and create other sub-CAs
+- Ideal for departmental or organizational CAs that need to manage their own certificate hierarchy
+
+### Restricted Sub-CAs
+- Created with the `no-sub-ca` option
+- Have `CA:FALSE` in their basicConstraints
+- Cannot create further sub-CAs
+- Can only issue end-entity certificates (server/user certificates)
+- Suitable for specific services or departments that only need to issue certificates
+
+To create a Sub-CA, use the `new-sub-ca.sh` script with the appropriate option:
+```sh
+# Create a normal Sub-CA that can issue sub-CAs
+./new-sub-ca.sh my-department-ca
+
+# Create a restricted Sub-CA that can only issue certificates
+./new-sub-ca.sh my-service-ca no-sub-ca
+```
 
 ## Usage
 
@@ -138,6 +158,24 @@ sub-CAs/
     ├── sign-server-cert.sh    # Script for signing server certificates
     ├── revoke-cert.sh         # Script for revoking certificates
     ├── p12.sh                 # Script for packaging certificates into .p12 files
+```
+
+## Testing
+
+The project includes automated test scripts to verify the correct operation of the CA infrastructure:
+
+### Root CA Testing
+- `test-root-ca.sh`: Verifies Root CA creation and configuration
+  - Automated certificate creation with proper attributes
+  - Security permissions verification
+  - Certificate extensions validation
+  - Key pair consistency checks
+  - CA database initialization
+
+### Running Tests
+```sh
+# Test Root CA setup
+./test-root-ca.sh
 ```
 
 ## Example Workflow

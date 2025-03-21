@@ -45,18 +45,53 @@ fi
 echo "Generating private key for sub-CA: ${SUB_CA_NAME}..."
 openssl genrsa -out "${SUB_CA_KEY}" 4096
 
-# Determine basicConstraints based on whether sub-CAs are allowed
+# Determine which extension to use based on whether sub-CAs are allowed
 if [ "${NO_SUB_CA}" = "no-sub-ca" ]; then
+    SUB_CA_EXTENSION="v3_restricted_sub_ca"
     BASIC_CONSTRAINTS="critical,CA:false"
 else
-    BASIC_CONSTRAINTS="critical,CA:true,pathlen:0"
+    SUB_CA_EXTENSION="v3_sub_ca"
+    BASIC_CONSTRAINTS="critical,CA:true"
 fi
 
 # Generate sub-CA CSR
 SUB_CA_CSR="${SUB_CA_CA_DIR}/${SUB_CA_NAME}.csr"
-SUB_CA_CONFIG="${SUB_CA_DIR}/config/${SUB_CA_NAME}-sub-ca.conf"
+SUB_CA_CONFIG_DIR="${SUB_CA_DIR}/config"
+SUB_CA_CONFIG="${SUB_CA_CONFIG_DIR}/${SUB_CA_NAME}-sub-ca.conf"
 
+# Create config directory
+mkdir -p "${SUB_CA_CONFIG_DIR}"
+chmod 700 "${SUB_CA_CONFIG_DIR}"
+
+# Create sub-CA config
 cat >"${SUB_CA_CONFIG}" <<EOT
+[ ca ]
+default_ca = CA_default
+
+[ CA_default ]
+dir = ${SUB_CA_CA_DIR}
+certs = \$dir/ca.db.certs
+database = \$dir/ca.db.index
+new_certs_dir = \$dir/ca.db.certs
+certificate = \$dir/${SUB_CA_NAME}.crt
+serial = \$dir/ca.db.serial
+private_key = \$dir/${SUB_CA_NAME}.key
+RANDOM = /dev/urandom
+default_days = 3650
+default_md = sha256
+preserve = no
+policy = policy_match
+default_bits = 4096
+
+[ policy_match ]
+countryName = match
+stateOrProvinceName = match
+localityName = match
+organizationName = match
+organizationalUnitName = optional
+commonName = supplied
+emailAddress = optional
+
 [ req ]
 default_bits            = 4096
 default_keyfile         = sub-ca.key
@@ -79,8 +114,14 @@ commonName_default      = ${SUB_CA_NAME}
 emailAddress            = Email Address
 emailAddress_default    = hostmaster@fumlersoft.dk
 [ v3_sub_ca ]
-basicConstraints        = ${BASIC_CONSTRAINTS}
+basicConstraints        = critical,CA:true
 keyUsage                = critical, keyCertSign, cRLSign
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid:always,issuer
+
+[ v3_restricted_sub_ca ]
+basicConstraints        = critical,CA:false
+keyUsage                = critical,digitalSignature,keyEncipherment
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid:always,issuer
 EOT
@@ -93,7 +134,7 @@ SUB_CA_CERT="${SUB_CA_CA_DIR}/${SUB_CA_NAME}.crt"
 ROOT_CA_CONFIG="${BASE}/config/root-ca.conf"
 
 echo "Signing sub-CA certificate with root CA..."
-openssl ca -config "${ROOT_CA_CONFIG}" -extensions v3_sub_ca -days 3650 \
+openssl ca -config "${ROOT_CA_CONFIG}" -extensions "${SUB_CA_EXTENSION}" -days 3650 \
     -in "${SUB_CA_CSR}" -out "${SUB_CA_CERT}" -keyfile "${ROOT_CA_DIR}/ca.key" \
     -cert "${ROOT_CA_DIR}/ca.crt"
 
