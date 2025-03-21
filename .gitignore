@@ -3,3 +3,4 @@ certs/*
 certs-revoked/*
 config/*
 CRL/*
+test-environment
