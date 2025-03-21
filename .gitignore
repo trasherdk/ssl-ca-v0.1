@@ -1,3 +1,5 @@
+.env
+!.env.example
 CA/*
 certs/*
 certs-revoked/*

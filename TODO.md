@@ -17,10 +17,15 @@
 ## 1. Certificate Expiry Notification and Thresholds
 - Add a script to check for certificates nearing expiration.
 - Notify the administrator for both root CA, sub-CAs, and issued certificates.
-- **Status**: Partially implemented.
-  - The `check-expiry.sh` script exists but could be enhanced:
-    - Add configurable thresholds for expiry notifications.
-    - Improve error handling and logging.
+- **Status**: Implemented.
+  - The `check-expiry.sh` script now has:
+    - Configurable thresholds via environment variables
+    - Email extraction from certificates (with fallback to .env)
+    - Proper error handling and logging
+    - Independent operation in Sub-CAs
+  - Remaining tasks:
+    - Add unit tests for expiry checks
+    - Consider adding alternative notification methods (e.g., syslog)
 
 ## 2. Sub-CA Pathlen Constraints
 - Enable normal Sub-CAs to create other Sub-CAs by removing pathlen constraint.

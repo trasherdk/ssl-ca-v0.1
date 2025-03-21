@@ -148,6 +148,7 @@ echo "Sub-CA directory structure initialized at: ${SUB_CA_DIR}"
 echo "Copying scripts to sub-CA directory..."
 cp "${BASE}/sub-ca-scripts/"* "${SUB_CA_DIR}/"
 cp "${BASE}/new-sub-ca.sh" "${SUB_CA_DIR}/"
-chmod +x "${SUB_CA_DIR}/"*.sh
+cp "${BASE}/check-expiry.sh" "${SUB_CA_DIR}/"
+chmod 700 "${SUB_CA_DIR}/"*.sh
 
 echo "Sub-CA is now ready to operate independently."

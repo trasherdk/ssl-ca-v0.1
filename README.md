@@ -15,6 +15,11 @@ This project provides a set of shell scripts to manage a simple Certificate Auth
 - **Certificate Revocation**: Revoke certificates and manage a Certificate Revocation List (CRL).
 - **PKCS#12 Packaging**: Package user certificates into `.p12` files for easy import into browsers or email clients.
 - **Configuration Management**: Automatically generate OpenSSL configuration files for various operations.
+- **Certificate Expiry Monitoring**: 
+  - Automated expiry checks for all certificates
+  - Different thresholds for Root CA, Sub-CAs, and end-entity certificates
+  - Email notifications to certificate owners (extracted from certificates)
+  - Each Sub-CA operates independently with its own expiry monitoring
 
 ## Sub-CA Types and Certificate Chain Depth
 
@@ -119,9 +124,25 @@ To create a Sub-CA, use the `new-sub-ca.sh` script with the appropriate option:
 ### Certificate Expiry Notification
 
 1. **Check for Expiring Certificates**:
-   Run `check-expiry.sh` to check for certificates nearing expiration and send email notifications:
+   Run `check-expiry.sh` to check for certificates nearing expiration and send email notifications. The script will:
+   - Extract email addresses from certificates for notifications
+   - Use different thresholds for different certificate types
+   - Work independently in both root CA and Sub-CA contexts
    ```sh
+   # In root CA:
    ./check-expiry.sh
+   
+   # In any Sub-CA:
+   cd sub-CAs/my-sub-ca
+   ./check-expiry.sh
+   ```
+   
+   Configure expiry thresholds in `.env` (optional, defaults shown):
+   ```sh
+   ROOT_CA_THRESHOLD=90   # Days before root CA expiry to notify
+   SUB_CA_THRESHOLD=60    # Days before Sub-CA expiry to notify
+   CERT_THRESHOLD=30      # Days before end-entity cert expiry to notify
+   EMAIL=admin@example.com # Fallback email if none in certificate
    ```
 
    - The script checks the root CA, sub-CAs, and issued certificates.
