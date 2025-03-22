@@ -1,8 +1,9 @@
 #!/bin/bash
 ##
 ##  check-expiry.sh - Check for certificates nearing expiration and send email notifications
-##  Usage: check-expiry.sh [-f|--force]
+##  Usage: check-expiry.sh [-f|--force] [-d|--debug]
 ##    -f, --force    Force notifications regardless of thresholds
+##    -d, --debug    Enable debug output (verbose sendmail, detailed progress)
 ##
 
 BASE=$(realpath $(dirname $0))
@@ -12,10 +13,15 @@ CERTS_DIR="${BASE}/certs"
 
 # Process command line arguments
 FORCE=false
+DEBUG=false
 while [ $# -gt 0 ]; do
     case "$1" in
         -f|--force)
             FORCE=true
+            shift
+            ;;
+        -d|--debug)
+            DEBUG=true
             shift
             ;;
         *)
@@ -24,6 +30,18 @@ while [ $# -gt 0 ]; do
             ;;
     esac
 done
+
+# Function to print debug messages
+debug_msg() {
+    if [ "${DEBUG}" = true ]; then
+        echo "[DEBUG] $1"
+    fi
+}
+
+# Function to print status messages
+status_msg() {
+    echo "[INFO] $1"
+}
 
 # Check if root CA certificate and key exist
 if [ ! -f "${CA_DIR}/ca.crt" ] || [ ! -f "${CA_DIR}/ca.key" ]; then
@@ -95,12 +113,12 @@ check_certificate() {
         message+="Serial: ${serial}\n"
         message+="Path: ${cert_path}"
 
-        echo -e "${message}"
+        debug_msg "Certificate details:\n${message}"
 
         # Get email from certificate and report it
         local cert_email=$(get_cert_email "${cert_path}")
         if [ -n "${cert_email}" ]; then
-            echo "Found email in certificate: ${cert_email}"
+            debug_msg "Found email in certificate: ${cert_email}"
         fi
 
         # Use EMAIL from .env for notifications
@@ -109,21 +127,15 @@ check_certificate() {
             return 1
         fi
 
-        # Check mail sending capability
-        if ! command -v mail >/dev/null 2>&1; then
-            echo "Warning: 'mail' command not found. Can't send email notification."
-            return 1
-        fi
-
         # Extract domain from email and get MX server
         local mail_domain=${EMAIL#*@}
-        echo "Checking MX records for domain: ${mail_domain}"
+        debug_msg "Checking MX records for domain: ${mail_domain}"
         local mx_server=$(host -t mx "${mail_domain}" | grep -m1 'mail is handled by' | awk '{print $NF}' | sed 's/\.$//')
         if [ -z "${mx_server}" ]; then
             echo "Warning: No MX records found for ${mail_domain}"
             return 1
         fi
-        echo "Found MX server: ${mx_server}"
+        debug_msg "Found MX server: ${mx_server}"
 
         # Check if we have sendmail
         if ! command -v sendmail >/dev/null 2>&1; then
@@ -140,9 +152,12 @@ check_certificate() {
         local message_id="<$(date +%Y%m%d%H%M%S).$$@${hostname}>"
 
         # Send using sendmail with proper headers and verbose output
-        if echo -e "From: SSL CA Monitor <${from_address}>\nDate: ${date_header}\nMessage-ID: ${message_id}\nTo: ${EMAIL}\nReply-To: ${from_address}\nX-Mailer: SSL CA Monitor\nX-Priority: 1\nPrecedence: high\nImportance: High\nAuto-Submitted: auto-generated\nMIME-Version: 1.0\nContent-Type: text/plain; charset=utf-8\nSubject: Certificate Expiry Warning: ${cert_name} (${days_remaining} days)\n\n${message}" | sendmail -i -v -f"${from_address}" "${EMAIL}" && sleep 30; then
+        local sendmail_opts="-i -f ssl-ca@${hostname}"
+        [ "${DEBUG}" = true ] && sendmail_opts="${sendmail_opts} -v"
 
-            echo "Sending notification to: ${EMAIL} via ${mx_server}"
+        if echo -e "From: SSL CA Monitor <${from_address}>\nDate: ${date_header}\nMessage-ID: ${message_id}\nTo: ${EMAIL}\nReply-To: ${from_address}\nX-Mailer: SSL CA Monitor\nX-Priority: 1\nPrecedence: high\nImportance: High\nAuto-Submitted: auto-generated\nMIME-Version: 1.0\nContent-Type: text/plain; charset=us-ascii\nSubject: Certificate Expiry Warning: ${cert_name} (${days_remaining} days)\n\n${message}" | sendmail ${sendmail_opts} "${EMAIL}"; then
+
+            status_msg "Sent expiry notification for ${cert_name} to ${EMAIL}"
         else
             echo "Warning: Failed to send email notification via ${mx_server}"
         fi
@@ -152,12 +167,12 @@ check_certificate() {
 }
 
 # Check the root CA certificate
-echo "Checking root CA certificate..."
+status_msg "Checking root CA certificate..."
 check_certificate "${CA_DIR}/ca.crt" "Root CA" "${ROOT_CA_THRESHOLD}"
 
 # Check sub-CA certificates
 if [ -d "${SUB_CA_DIR}" ]; then
-    echo "Checking sub-CA certificates..."
+    status_msg "Checking sub-CA certificates..."
     for sub_ca in "${SUB_CA_DIR}"/*; do
         if [ -d "${sub_ca}/CA" ]; then
             check_certificate "${sub_ca}/CA/ca.crt" "Sub-CA $(basename "${sub_ca}")" "${SUB_CA_THRESHOLD}"
@@ -174,4 +189,4 @@ if [ -d "${CERTS_DIR}" ]; then
     done
 fi
 
-echo "Certificate expiry check completed."
+status_msg "Certificate expiry check completed."

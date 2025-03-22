@@ -12,15 +12,15 @@ print_header "Testing Certificate Expiry Notifications"
 
 # Run check-expiry with force flag to test notifications
 print_step "Running expiry check with force flag..."
-output=$("${BASE}/check-expiry.sh" --force 2>&1)
+output=$("${BASE}/check-expiry.sh" --force --debug 2>&1)
 echo "$output"
 
 # Check if emails were found and notifications sent
-if ! echo "$output" | grep -q "Found email in certificate"; then
+if ! echo "$output" | grep -q "\[DEBUG\] Found email in certificate"; then
     print_error "No email addresses found in certificates"
 fi
 
-if ! echo "$output" | grep -q "Sending notification"; then
+if ! echo "$output" | grep -q "\[INFO\] Sent expiry notification"; then
     print_error "No notifications were sent"
 fi
 

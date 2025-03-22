@@ -14,22 +14,20 @@
 - [ ] 11. PKCS#12 Password Management
 - [ ] 12. Periodic CRL Automation
 
-## 1. Certificate Expiry Notification and Thresholds
+## 1. Certificate Expiry Notification and Thresholds ✓
 - Add a script to check for certificates nearing expiration.
 - Notify the administrator for both root CA, sub-CAs, and issued certificates.
-- **Status**: Partially Implemented.
-  - The `check-expiry.sh` script now has:
+- **Status**: Completed.
+  - The `check-expiry.sh` script has:
     - Configurable thresholds via environment variables
     - Email extraction from certificates (with fallback to .env)
     - Proper error handling and logging
     - Independent operation in Sub-CAs
-  - Completed:
-    - Email delivery working with proper TLS authentication
-    - Root CA properly trusted in system store
+    - TLS-encrypted SMTP with client certificate authentication
+    - Debug mode for troubleshooting (-d flag)
+    - Clean, concise output for normal operation
     - test-email.sh script for testing email delivery
-    - Fixed MAIL FROM authentication issues
-  - Remaining tasks:
-    - Add unit tests for expiry checks
+  - Future enhancements (optional):
     - Consider adding alternative notification methods (e.g., syslog)
 
 ## 2. Sub-CA Pathlen Constraints

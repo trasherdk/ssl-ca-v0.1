@@ -15,14 +15,16 @@ This project provides a set of shell scripts to manage a simple Certificate Auth
 - **Certificate Revocation**: Revoke certificates and manage a Certificate Revocation List (CRL).
 - **PKCS#12 Packaging**: Package user certificates into `.p12` files for easy import into browsers or email clients.
 - **Configuration Management**: Automatically generate OpenSSL configuration files for various operations.
-- **Certificate Expiry Monitoring**: 
-  - Automated expiry checks for all certificates
-  - Different thresholds for Root CA, Sub-CAs, and end-entity certificates
+- **Certificate Expiry Monitoring** ✓: 
+  - Automated expiry checks for all certificates with configurable thresholds
   - Secure email notifications to certificate owners:
     - Email addresses extracted from certificates (with .env fallback)
     - TLS-encrypted SMTP with client certificate authentication
     - Root CA properly trusted in system certificate store
   - Each Sub-CA operates independently with its own expiry monitoring
+  - Debug mode (-d flag) for detailed troubleshooting
+  - Clean, concise output for normal operation
+  - Includes test scripts for verifying notifications
   - Includes test-email.sh script for verifying email delivery
 
 ## Sub-CA Types and Certificate Chain Depth
