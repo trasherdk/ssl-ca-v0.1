@@ -1,12 +1,29 @@
 #!/bin/bash
 ##
 ##  check-expiry.sh - Check for certificates nearing expiration and send email notifications
+##  Usage: check-expiry.sh [-f|--force]
+##    -f, --force    Force notifications regardless of thresholds
 ##
 
 BASE=$(realpath $(dirname $0))
 CA_DIR="${BASE}/CA"
 SUB_CA_DIR="${BASE}/sub-CAs"
 CERTS_DIR="${BASE}/certs"
+
+# Process command line arguments
+FORCE=false
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -f|--force)
+            FORCE=true
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            exit 1
+            ;;
+    esac
+done
 
 # Check if root CA certificate and key exist
 if [ ! -f "${CA_DIR}/ca.crt" ] || [ ! -f "${CA_DIR}/ca.key" ]; then
@@ -64,11 +81,11 @@ check_certificate() {
 
     # Calculate days remaining
     local expiry_timestamp=$(date -d "${expiry_date}" +%s 2>/dev/null || date -j -f "%b %d %T %Y %Z" "${expiry_date}" +%s)
-    local current_timestamp=$(date +%s)
+    local current_timestamp=${CURRENT_TIMESTAMP:-$(date +%s)}  # Allow override for testing
     local days_remaining=$(( (expiry_timestamp - current_timestamp) / 86400 ))
 
-    # Check if the certificate is nearing expiration
-    if [ "${days_remaining}" -le "${threshold}" ]; then
+    # Check if the certificate is nearing expiration or force is enabled
+    if [ "${FORCE}" = true ] || [ "${days_remaining}" -le "${threshold}" ]; then
         local message="Certificate Details:\n"
         message+="Name: ${cert_name}\n"
         message+="Days Remaining: ${days_remaining}\n"
@@ -80,22 +97,54 @@ check_certificate() {
 
         echo -e "${message}"
 
-        # Get email from certificate or use fallback
+        # Get email from certificate and report it
         local cert_email=$(get_cert_email "${cert_path}")
-        local notify_email=${cert_email:-${EMAIL}}
+        if [ -n "${cert_email}" ]; then
+            echo "Found email in certificate: ${cert_email}"
+        fi
 
-        if [ -z "${notify_email}" ]; then
-            echo "Warning: No email found in certificate and no fallback email in .env"
+        # Use EMAIL from .env for notifications
+        if [ -z "${EMAIL}" ]; then
+            echo "Warning: No EMAIL set in .env for notifications"
             return 1
         fi
 
-        # Check if mail command exists
-        if command -v mail >/dev/null 2>&1; then
-            echo -e "${message}" | \
-                mail -s "Certificate Expiry Warning: ${cert_name} (${days_remaining} days)" "${notify_email}"
-            echo "Notification sent to: ${notify_email}"
-        else
+        # Check mail sending capability
+        if ! command -v mail >/dev/null 2>&1; then
             echo "Warning: 'mail' command not found. Can't send email notification."
+            return 1
+        fi
+
+        # Extract domain from email and get MX server
+        local mail_domain=${EMAIL#*@}
+        echo "Checking MX records for domain: ${mail_domain}"
+        local mx_server=$(host -t mx "${mail_domain}" | grep -m1 'mail is handled by' | awk '{print $NF}' | sed 's/\.$//')
+        if [ -z "${mx_server}" ]; then
+            echo "Warning: No MX records found for ${mail_domain}"
+            return 1
+        fi
+        echo "Found MX server: ${mx_server}"
+
+        # Check if we have sendmail
+        if ! command -v sendmail >/dev/null 2>&1; then
+            echo "Warning: 'sendmail' command not found. Can't send email notification."
+            return 1
+        fi
+
+        # Get local hostname for From address
+        local hostname=$(hostname -f)
+        local from_address="ssl-ca@${hostname}"
+
+        # Prepare email headers
+        local date_header=$(date -R)
+        local message_id="<$(date +%Y%m%d%H%M%S).$$@${hostname}>"
+
+        # Send using sendmail with proper headers and verbose output
+        if echo -e "From: SSL CA Monitor <${from_address}>\nDate: ${date_header}\nMessage-ID: ${message_id}\nTo: ${EMAIL}\nReply-To: ${from_address}\nX-Mailer: SSL CA Monitor\nX-Priority: 1\nPrecedence: high\nImportance: High\nAuto-Submitted: auto-generated\nMIME-Version: 1.0\nContent-Type: text/plain; charset=utf-8\nSubject: Certificate Expiry Warning: ${cert_name} (${days_remaining} days)\n\n${message}" | sendmail -i -v -f"${from_address}" "${EMAIL}" && sleep 30; then
+
+            echo "Sending notification to: ${EMAIL} via ${mx_server}"
+        else
+            echo "Warning: Failed to send email notification via ${mx_server}"
         fi
     fi
 
@@ -111,7 +160,7 @@ if [ -d "${SUB_CA_DIR}" ]; then
     echo "Checking sub-CA certificates..."
     for sub_ca in "${SUB_CA_DIR}"/*; do
         if [ -d "${sub_ca}/CA" ]; then
-            check_certificate "${sub_ca}/CA/$(basename "${sub_ca}").crt" "Sub-CA $(basename "${sub_ca}")" "${SUB_CA_THRESHOLD}"
+            check_certificate "${sub_ca}/CA/ca.crt" "Sub-CA $(basename "${sub_ca}")" "${SUB_CA_THRESHOLD}"
         fi
     done
 fi

@@ -17,13 +17,17 @@
 ## 1. Certificate Expiry Notification and Thresholds
 - Add a script to check for certificates nearing expiration.
 - Notify the administrator for both root CA, sub-CAs, and issued certificates.
-- **Status**: Implemented.
+- **Status**: Partially Implemented.
   - The `check-expiry.sh` script now has:
     - Configurable thresholds via environment variables
     - Email extraction from certificates (with fallback to .env)
     - Proper error handling and logging
     - Independent operation in Sub-CAs
+  - Known Issues:
+    - Email delivery failing due to smf-spamd milter issues on mail server
+    - Created test-email.sh for isolated testing
   - Remaining tasks:
+    - Investigate and fix smf-spamd milter aborts on mail server
     - Add unit tests for expiry checks
     - Consider adding alternative notification methods (e.g., syslog)
 
