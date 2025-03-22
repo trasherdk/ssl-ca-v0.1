@@ -1,7 +1,7 @@
 # TODO - Planned Improvements and Missing Features
 
 ## Checklist
-- [ ] 1. Certificate Expiry Notification and Thresholds
+- [x] 1. Certificate Expiry Notification and Thresholds
 - [x] 2. Sub-CA Pathlen Constraints
 - [ ] 3. CRL Management
 - [ ] 4. Audit Logs
