@@ -36,7 +36,7 @@ if [ ! -d "${SUB_CA_CA_DIR}" ]; then
 fi
 
 # Generate sub-CA private key
-SUB_CA_KEY="${SUB_CA_CA_DIR}/${SUB_CA_NAME}.key"
+SUB_CA_KEY="${SUB_CA_CA_DIR}/ca.key"
 if [ -f "${SUB_CA_KEY}" ]; then
     echo "Error: Sub-CA key already exists for ${SUB_CA_NAME}."
     exit 1
@@ -73,9 +73,9 @@ dir = ${SUB_CA_CA_DIR}
 certs = \$dir/ca.db.certs
 database = \$dir/ca.db.index
 new_certs_dir = \$dir/ca.db.certs
-certificate = \$dir/${SUB_CA_NAME}.crt
+certificate = \$dir/ca.crt
 serial = \$dir/ca.db.serial
-private_key = \$dir/${SUB_CA_NAME}.key
+private_key = \$dir/ca.key
 RANDOM = /dev/urandom
 default_days = 3650
 default_md = sha256
@@ -130,7 +130,7 @@ echo "Generating CSR for sub-CA: ${SUB_CA_NAME}..."
 openssl req -new -key "${SUB_CA_KEY}" -out "${SUB_CA_CSR}" -config "${SUB_CA_CONFIG}"
 
 # Sign the sub-CA certificate with the root CA
-SUB_CA_CERT="${SUB_CA_CA_DIR}/${SUB_CA_NAME}.crt"
+SUB_CA_CERT="${SUB_CA_CA_DIR}/ca.crt"
 ROOT_CA_CONFIG="${BASE}/config/root-ca.conf"
 
 echo "Signing sub-CA certificate with root CA..."
@@ -146,9 +146,9 @@ echo "Sub-CA directory structure initialized at: ${SUB_CA_DIR}"
 
 # Copy scripts to sub-CA root
 echo "Copying scripts to sub-CA directory..."
-cp "${BASE}/sub-ca-scripts/"* "${SUB_CA_DIR}/"
-cp "${BASE}/new-sub-ca.sh" "${SUB_CA_DIR}/"
-cp "${BASE}/check-expiry.sh" "${SUB_CA_DIR}/"
-chmod 700 "${SUB_CA_DIR}/"*.sh
-
+for script in new-server-cert.sh new-user-cert.sh new-sub-ca.sh check-expiry.sh sign-server-cert.sh sign-user-cert.sh export-p12.sh export-server-p12.sh export-user-p12.sh revoke-cert.sh revoke-server-cert.sh revoke-user-cert.sh p12.sh server-p12.sh user-p12.sh; do
+    if [ -f "${BASE}/${script}" ]; then
+        cp -p "${BASE}/${script}" "${SUB_CA_DIR}/"
+    fi
+done
 echo "Sub-CA is now ready to operate independently."
