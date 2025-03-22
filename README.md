@@ -18,8 +18,12 @@ This project provides a set of shell scripts to manage a simple Certificate Auth
 - **Certificate Expiry Monitoring**: 
   - Automated expiry checks for all certificates
   - Different thresholds for Root CA, Sub-CAs, and end-entity certificates
-  - Email notifications to certificate owners (extracted from certificates)
+  - Secure email notifications to certificate owners:
+    - Email addresses extracted from certificates (with .env fallback)
+    - TLS-encrypted SMTP with client certificate authentication
+    - Root CA properly trusted in system certificate store
   - Each Sub-CA operates independently with its own expiry monitoring
+  - Includes test-email.sh script for verifying email delivery
 
 ## Sub-CA Types and Certificate Chain Depth
 

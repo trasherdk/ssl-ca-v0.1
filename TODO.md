@@ -23,11 +23,12 @@
     - Email extraction from certificates (with fallback to .env)
     - Proper error handling and logging
     - Independent operation in Sub-CAs
-  - Known Issues:
-    - Email delivery failing due to smf-spamd milter issues on mail server
-    - Created test-email.sh for isolated testing
+  - Completed:
+    - Email delivery working with proper TLS authentication
+    - Root CA properly trusted in system store
+    - test-email.sh script for testing email delivery
+    - Fixed MAIL FROM authentication issues
   - Remaining tasks:
-    - Investigate and fix smf-spamd milter aborts on mail server
     - Add unit tests for expiry checks
     - Consider adding alternative notification methods (e.g., syslog)
 
