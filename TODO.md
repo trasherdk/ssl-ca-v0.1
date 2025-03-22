@@ -13,6 +13,7 @@
 - [ ] 10. Automated Testing
 - [ ] 11. PKCS#12 Password Management
 - [ ] 12. Periodic CRL Automation
+- [ ] 13. Create Svelte 5/SvelteKit Web Interface
 
 ## 1. Certificate Expiry Notification and Thresholds ✓
 - Add a script to check for certificates nearing expiration.
@@ -124,3 +125,27 @@
 
 ## 12. Configurable Expiry Thresholds for Notifications
 - Modify `check-expiry.sh` to allow administrators to configure the expiry threshold (e.g., 30 days, 60 days).
+
+## 13. Create Svelte 5/SvelteKit Web Interface
+- Create a standalone modern web interface using Svelte 5 and SvelteKit
+- Technical Stack:
+  - Frontend: Svelte 5 with SvelteKit
+  - Database: MySQL for certificate and user storage
+  - X.509 Operations: @peculiar/x509 for certificate handling
+  - No dependency on existing bash scripts
+- Features to include:
+  - Dashboard showing CA hierarchy and certificate status
+  - Certificate lifecycle management (create, revoke, renew)
+  - Real-time expiry monitoring and notifications
+  - CRL and OCSP management
+  - User management and access control
+  - Audit log viewer
+  - Responsive design for desktop and mobile
+  - Database schema for storing:
+    - CA hierarchy
+    - Certificates and keys
+    - User accounts and permissions
+    - Audit logs
+    - Notification settings
+- **Status**: Not started.
+
