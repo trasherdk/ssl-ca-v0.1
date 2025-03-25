@@ -18,43 +18,16 @@ mkdir -p "${TEST_DIR}"
 
 # Test Root CA creation
 echo "Testing Root CA creation..."
-# Create a named pipe for logging while showing output
-test_pipe="${TEST_DIR}/test_pipe"
-mkfifo "$test_pipe"
-
-# Start logging in background
-tee "${TEST_DIR}/root-ca.log" < "$test_pipe" &
-TEE_PID=$!
-
-# Run expect and tee its output
-expect <<EOF > "$test_pipe"
-log_user 1
+expect <<EOF > "${TEST_DIR}/root-ca.log" 2>&1
 spawn "${BASE}/new-root-ca.sh"
-expect {
-    "Enter PEM pass phrase:" {
-        send "${TEST_PASSPHRASE}\r"
-        exp_continue
-    }
-    "Verifying - Enter PEM pass phrase:" {
-        send "${TEST_PASSPHRASE}\r"
-        exp_continue
-    }
-    "Enter pass phrase for" {
-        send "${TEST_PASSPHRASE}\r"
-        exp_continue
-    }
-    timeout {
-        puts "Timeout waiting for prompt"
-        exit 1
-    }
-    eof
-}
+expect "Enter PEM pass phrase:"
+send "${TEST_PASSPHRASE}\r"
+expect "Verifying - Enter PEM pass phrase:"
+send "${TEST_PASSPHRASE}\r"
+expect "Enter pass phrase for"
+send "${TEST_PASSPHRASE}\r"
+expect eof
 EOF
-RESULT=$?
-
-# Clean up the pipe and background process
-wait $TEE_PID
-rm "$test_pipe"
 if [ ! -f "${BASE}/CA/ca.crt" ]; then
     echo "Root CA creation failed. Check ${TEST_DIR}/root-ca.log for details."
     exit 1
@@ -63,30 +36,12 @@ echo "Root CA creation successful."
 
 # Test Sub-CA creation
 echo "Testing Sub-CA creation..."
-# Log sub-CA creation while showing output
-tee "${TEST_DIR}/sub-ca.log" < "$test_pipe" &
-TEE_PID=$!
-
-expect <<EOF > "$test_pipe"
-log_user 1
+expect <<EOF > "${TEST_DIR}/sub-ca.log" 2>&1
 spawn "${BASE}/new-sub-ca.sh" "${SUB_CA_NAME}"
-expect {
-    "Enter PEM pass phrase:" {
-        send "${TEST_PASSPHRASE}\r"
-        exp_continue
-    }
-    timeout {
-        puts "Timeout waiting for prompt"
-        exit 1
-    }
-    eof
-}
+expect "Enter PEM pass phrase:"
+send "${TEST_PASSPHRASE}\r"
+expect eof
 EOF
-RESULT=$?
-
-# Clean up
-wait $TEE_PID
-
 if [ ! -f "${BASE}/sub-CAs/${SUB_CA_NAME}/CA/${SUB_CA_NAME}.crt" ]; then
     echo "Sub-CA creation failed. Check ${TEST_DIR}/sub-ca.log for details."
     exit 1
