@@ -32,10 +32,17 @@ print_error() {
     exit 1
 }
 
+# Cleanup existing CA and certificate structures
+print_step "Cleaning up existing CA and certificate structures..."
+rm -rf "${BASE}/CA" \
+    "${BASE}/certs" \
+    "${BASE}/config" \
+    "${TEST_DIR}" \
+    "${BASE}/sub-CAs"
+
 # Setup test environment
 print_header "Setting up test environment"
 print_step "Creating test directory..."
-rm -rf "${TEST_DIR}"
 mkdir -p "${TEST_DIR}"
 
 # Create named pipe for logging while showing output

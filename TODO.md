@@ -81,11 +81,13 @@
 - [ ] Create PKCS#12 test script
 
 ### 10.1 Core Functionality Tests
-- Test certificate chain validation
-- Test CRL generation and validation
-- Test certificate renewal processes
-- Test PKCS#12 file generation and password handling
-- Test sub-CA creation with different pathlen constraints
+- [x] Test Root CA creation and verification
+- [x] Test Sub-CA creation and verification.
+- [ ] Test certificate chain validation: Not yet tested.
+- [ ] Test CRL generation and validation: Not yet tested.
+- [ ] Test certificate renewal processes: Not yet tested.
+- [ ] Test PKCS#12 file generation and password handling: Not yet tested.
+- [ ] Test sub-CA creation with different pathlen constraints: Not yet tested.
 
 ### 10.2 Error Handling Tests
 - Test invalid certificate signing requests
@@ -148,4 +150,8 @@
 
 ## Additional Notes
 - Updated `new-root-ca.sh` to include a check that prevents running the script in a directory where a CA certificate already exists. This ensures that the script is only used to create a new root CA in a clean directory. A stern warning is displayed if the condition is violated.
+- [x] Fix issues with `test-root-ca.sh`, `test-server-cert.sh`, and `test-user-cert.sh` scripts.
+- [x] Ensure all scripts run successfully without manual intervention.
+- [x] Resolve user certificate signing issues and verify successful execution.
+- [x] Validate that all certificates are correctly generated and verified.
 

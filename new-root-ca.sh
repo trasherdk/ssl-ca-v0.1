@@ -47,41 +47,91 @@ if [ ! -d "${BASE}/config" ]; then
 	chmod g-rwx,o-rwx "${BASE}/config"
 fi
 
+# Add the v3_restricted_sub_ca extension to the root-ca.conf configuration
 CONFIG="${BASE}/config/root-ca.conf"
 cat >$CONFIG <<EOT
+[ ca ]
+default_ca = CA_default
+
+[ CA_default ]
+dir                     = ./CA
+certs                   = \$dir/ca.db.certs
+database                = \$dir/ca.db.index
+new_certs_dir           = \$dir/ca.db.certs
+certificate             = \$dir/ca.crt
+serial                  = \$dir/ca.db.serial
+private_key             = \$dir/ca.key
+default_days            = 3650
+default_md              = sha256
+policy                  = policy_match
+email_in_dn             = no
+rand_serial             = yes
+
+[ policy_match ]
+countryName             = match
+stateOrProvinceName     = match
+organizationName        = match
+organizationalUnitName  = optional
+commonName              = supplied
+emailAddress            = optional
+
 [ req ]
 dir                     = ${CA}
-default_bits						= ${KEYBITS}
-default_keyfile					= \$dir/ca.key
-distinguished_name			= req_distinguished_name
-x509_extensions					= v3_ca
-string_mask							= nombstr
-req_extensions					= v3_req
+default_bits            = 4096
+default_keyfile         = \$dir/ca.key
+distinguished_name      = req_distinguished_name
+x509_extensions         = v3_ca
+string_mask             = nombstr
+req_extensions          = v3_req
+
 [ req_distinguished_name ]
-countryName							= Country Name (2 letter code)
-countryName_default			= DK
-countryName_min					= 2
-countryName_max					= 2
-stateOrProvinceName	= State or Province Name (full name)
-stateOrProvinceName_default	= Denmark
-localityName				= Locality Name (eg, city)
-localityName_default	= Copenhagen
-0.organizationName		= Organization Name (eg, company)
-0.organizationName_default	= Trader Internet
-organizationalUnitName	= Organizational Unit Name (eg, section)
-organizationalUnitName_default	= Certification Services Division
-commonName					= Common Name (eg, MD Root CA)
-commonName_max			= 64
-commonName_default	= Trader Internet Root CA
-emailAddress				= Email Address
-emailAddress_default	= hostmaster@fumlersoft.dk
-emailAddress_max		= 40
+countryName             = Country Name (2 letter code)
+countryName_default     = DK
+countryName_min         = 2
+countryName_max         = 2
+stateOrProvinceName     = State or Province Name (full name)
+stateOrProvinceName_default = Denmark
+localityName            = Locality Name (eg, city)
+localityName_default    = Copenhagen
+0.organizationName      = Organization Name (eg, company)
+0.organizationName_default = Trader Internet
+organizationalUnitName  = Organizational Unit Name (eg, section)
+organizationalUnitName_default = Certification Services Division
+commonName              = Common Name (eg, MD Root CA)
+commonName_max          = 64
+commonName_default      = Trader Internet Root CA
+emailAddress            = Email Address
+emailAddress_default    = hostmaster@fumlersoft.dk
+emailAddress_max        = 40
+
 [ v3_ca ]
-basicConstraints		= critical,CA:true
-subjectKeyIdentifier	= hash
+basicConstraints        = critical,CA:true
+keyUsage                = critical,keyCertSign,cRLSign
+subjectKeyIdentifier    = hash
+
 [ v3_req ]
-nsCertType					= objsign,email,server
+nsCertType              = objsign,email,server
+
+[ v3_sub_ca ]
+basicConstraints        = critical,CA:true
+keyUsage                = critical,keyCertSign,cRLSign
+subjectKeyIdentifier    = hash
+
+[ v3_restricted_sub_ca ]
+basicConstraints        = critical,CA:false
+keyUsage                = critical,digitalSignature,keyEncipherment
+subjectKeyIdentifier    = hash
 EOT
+
+# Debugging output to confirm serial number file creation
+echo "Checking if serial number file exists..."
+if [ ! -f "${CA}/ca.db.serial" ]; then
+    echo "Serial number file not found. Initializing..."
+    echo "01" > "${CA}/ca.db.serial"
+    echo "Serial number file initialized with value: 01"
+else
+    echo "Serial number file already exists."
+fi
 
 echo "Self-sign the root CA..."
 openssl req -new -x509 -days 3650 -config $CONFIG -key "$CA/ca.key" -out "$CA/ca.crt"

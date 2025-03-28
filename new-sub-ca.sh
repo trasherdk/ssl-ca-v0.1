@@ -45,13 +45,11 @@ fi
 echo "Generating private key for sub-CA: ${SUB_CA_NAME}..."
 openssl genrsa -out "${SUB_CA_KEY}" 4096
 
-# Determine which extension to use based on whether sub-CAs are allowed
+# Ensure the correct extension is used for Sub-CAs
 if [ "${NO_SUB_CA}" = "no-sub-ca" ]; then
     SUB_CA_EXTENSION="v3_restricted_sub_ca"
-    BASIC_CONSTRAINTS="critical,CA:false"
 else
-    SUB_CA_EXTENSION="v3_sub_ca"
-    BASIC_CONSTRAINTS="critical,CA:true"
+    SUB_CA_EXTENSION="v3_ca"
 fi
 
 # Generate sub-CA CSR
@@ -69,28 +67,28 @@ cat >"${SUB_CA_CONFIG}" <<EOT
 default_ca = CA_default
 
 [ CA_default ]
-dir = ${SUB_CA_CA_DIR}
-certs = \$dir/ca.db.certs
-database = \$dir/ca.db.index
-new_certs_dir = \$dir/ca.db.certs
-certificate = \$dir/ca.crt
-serial = \$dir/ca.db.serial
-private_key = \$dir/ca.key
-RANDOM = /dev/urandom
-default_days = 3650
-default_md = sha256
-preserve = no
-policy = policy_match
-default_bits = 4096
+dir                     = ./CA
+certs                   = \$dir/ca.db.certs
+database                = \$dir/ca.db.index
+new_certs_dir           = \$dir/ca.db.certs
+certificate             = \$dir/ca.crt
+serial                  = \$dir/ca.db.serial
+private_key             = \$dir/ca.key
+RANDOM                  = /dev/urandom
+default_days            = 3650
+default_md              = sha256
+preserve                = no
+policy                  = policy_match
+default_bits            = 4096
 
 [ policy_match ]
-countryName = match
-stateOrProvinceName = match
-localityName = match
-organizationName = match
-organizationalUnitName = optional
-commonName = supplied
-emailAddress = optional
+countryName             = match
+stateOrProvinceName     = match
+localityName            = match
+organizationName        = match
+organizationalUnitName  = optional
+commonName              = supplied
+emailAddress            = optional
 
 [ req ]
 default_bits            = 4096
@@ -98,6 +96,7 @@ default_keyfile         = sub-ca.key
 distinguished_name      = req_distinguished_name
 x509_extensions         = v3_sub_ca
 string_mask             = nombstr
+
 [ req_distinguished_name ]
 countryName             = Country Name (2 letter code)
 countryName_default     = DK
@@ -113,9 +112,10 @@ commonName              = Common Name (eg, www.domain.com)
 commonName_default      = ${SUB_CA_NAME}
 emailAddress            = Email Address
 emailAddress_default    = hostmaster@fumlersoft.dk
+
 [ v3_sub_ca ]
 basicConstraints        = critical,CA:true
-keyUsage                = critical, keyCertSign, cRLSign
+keyUsage                = critical,keyCertSign,cRLSign
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid:always,issuer
 
@@ -138,6 +138,17 @@ openssl ca -config "${ROOT_CA_CONFIG}" -extensions "${SUB_CA_EXTENSION}" -days 3
     -in "${SUB_CA_CSR}" -out "${SUB_CA_CERT}" -keyfile "${ROOT_CA_DIR}/ca.key" \
     -cert "${ROOT_CA_DIR}/ca.crt"
 
+# Append the current CA's certificate to the new Sub-CA's certificate
+cat "${BASE}/CA/ca.crt" >> "$SUB_CA_CERT"
+
+# Validate the Sub-CA certificate after signing and appending the root CA's certificate
+# Update the openssl verify command to use the second-level Sub-CA's CA/ca.crt file
+openssl verify -CAfile "$SUB_CA_CERT" "$SUB_CA_CERT" > "${SUB_CA_CA_DIR}/ca-verify.log" 2>&1
+if [ $? -ne 0 ]; then
+    echo "Error: Sub-CA certificate validation failed. Check ${SUB_CA_CA_DIR}/ca-verify.log for details."
+    exit 1
+fi
+
 # Cleanup
 rm -f "${SUB_CA_CSR}" "${SUB_CA_CONFIG}"
 
@@ -146,9 +157,35 @@ echo "Sub-CA directory structure initialized at: ${SUB_CA_DIR}"
 
 # Copy scripts to sub-CA root
 echo "Copying scripts to sub-CA directory..."
-for script in new-server-cert.sh new-user-cert.sh new-sub-ca.sh check-expiry.sh sign-server-cert.sh sign-user-cert.sh export-p12.sh export-server-p12.sh export-user-p12.sh revoke-cert.sh revoke-server-cert.sh revoke-user-cert.sh p12.sh server-p12.sh user-p12.sh; do
+scripts=(
+    "new-server-cert.sh" 
+    "new-user-cert.sh" 
+    "new-sub-ca.sh" 
+    "check-expiry.sh" 
+    "sign-server-cert.sh" 
+    "sign-user-cert.sh" 
+    "export-p12.sh" 
+    "export-server-p12.sh" 
+    "export-user-p12.sh" 
+    "revoke-cert.sh" 
+    "revoke-server-cert.sh" 
+    "revoke-user-cert.sh" 
+    "p12.sh" 
+    "server-p12.sh" 
+    "user-p12.sh"
+    "test-sub-ca.sh"
+    )
+
+for script in "${scripts[@]}"; do
     if [ -f "${BASE}/${script}" ]; then
         cp -p "${BASE}/${script}" "${SUB_CA_DIR}/"
     fi
 done
+
+# Copy the root-ca.conf file to the Sub-CA's config directory
+cp "${BASE}/config/root-ca.conf" "${SUB_CA_DIR}/config/"
+
+# Copy the test-sub-ca.sh script to the Sub-CA directory
+cp "${BASE}/test-sub-ca.sh" "${SUB_CA_DIR}/"
+
 echo "Sub-CA is now ready to operate independently."

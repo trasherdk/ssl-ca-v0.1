@@ -24,7 +24,9 @@ mkdir -p "${TEST_DIR}"
 
 # Test Root CA creation
 echo "Testing Root CA creation..."
+# Add debugging output to the expect script for Root CA creation
 expect <<EOF > "${TEST_DIR}/root-ca.log" 2>&1
+log_user 1
 spawn "${BASE}/new-root-ca.sh"
 expect "Enter PEM pass phrase:"
 send -- "${TEST_PASSPHRASE}\r"
@@ -39,7 +41,7 @@ send -- "Denmark\r"
 expect "Locality Name (eg, city) [Copenhagen]:"
 send -- "Copenhagen\r"
 expect "Organization Name (eg, company) [Trader Internet]:"
-send -- "Test Organization\r"
+send -- "Trader Internet\r"
 expect "Organizational Unit Name (eg, section) [Certification Services Division]:"
 send -- "Certification Services Division\r"
 expect "Common Name (eg, MD Root CA) [Trader Internet Root CA]:"
@@ -54,8 +56,15 @@ if [ ! -f "${BASE}/CA/ca.crt" ]; then
 fi
 echo "Root CA creation successful."
 
+# Cleanup existing Sub-CA data if it exists
+if [ -d "${BASE}/sub-CAs/${SUB_CA_NAME}" ]; then
+    echo "Cleaning up existing Sub-CA data for ${SUB_CA_NAME}..."
+    rm -rf "${BASE}/sub-CAs/${SUB_CA_NAME}"
+fi
+
 # Test Sub-CA creation
 echo "Testing Sub-CA creation..."
+# Refactor the expect script for Sub-CA creation to fix input handling
 expect <<EOF > "${TEST_DIR}/sub-ca.log" 2>&1
 spawn "${BASE}/new-sub-ca.sh" "${SUB_CA_NAME}"
 expect "Enter PEM pass phrase:"
@@ -67,10 +76,10 @@ send -- "Denmark\r"
 expect "Locality Name (eg, city) [Copenhagen]:"
 send -- "Copenhagen\r"
 expect "Organization Name (eg, company) [Trader Internet]:"
-send -- "Test Organization\r"
-expect "Organizational Unit Name (eg, section) [Sub-CA Certificates]:"
-send -- "Sub-CA Certificates\r"
-expect "Common Name (eg, www.domain.com) [test-sub-ca]:"
+send -- "Trader Internet\r"
+expect "Organizational Unit Name (eg, section) [Certification Services Division]:"
+send -- "Certification Services Division\r"
+expect "Common Name (eg, MD Root CA) [test-sub-ca]:"
 send -- "test-sub-ca\r"
 expect "Email Address [hostmaster@fumlersoft.dk]:"
 send -- "hostmaster@fumlersoft.dk\r"
@@ -86,19 +95,10 @@ echo "Sub-CA creation successful."
 echo "Testing Server Certificate creation and signing..."
 "${BASE}/new-server-cert.sh" "${SERVER_NAME}" > "${TEST_DIR}/server-cert.log" 2>&1
 expect <<EOF >> "${TEST_DIR}/server-cert.log" 2>&1
-log_user 1
 spawn "${BASE}/sign-server-cert.sh" "${SERVER_NAME}"
-expect {
-    "Enter PEM pass phrase:" {
-        send -- "${TEST_PASSPHRASE}\r"
-        exp_continue
-    }
-    timeout {
-        puts "\nTimeout waiting for prompt"
-        exit 1
-    }
-    eof
-}
+expect "Enter PEM pass phrase:"
+send "${TEST_PASSPHRASE}\r"
+expect eof
 EOF
 if [ ! -f "${BASE}/certs/${SERVER_NAME}/${SERVER_NAME}.crt" ]; then
     echo "Server certificate creation or signing failed. Check ${TEST_DIR}/server-cert.log for details."

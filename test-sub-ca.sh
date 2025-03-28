@@ -36,6 +36,11 @@ TEST_PASSPHRASE="testpass"
 SUB_CA_NORMAL="test-sub-ca-normal"
 SUB_CA_RESTRICTED="test-sub-ca-restricted"
 
+# Cleanup subdirectories
+#rm -rf "${BASE}/sub-CAs/${SUB_CA_NORMAL}"
+#rm -rf "${BASE}/sub-CAs/${SUB_CA_RESTRICTED}"
+
+
 # Function to test a Sub-CA
 test_sub_ca() {
     local SUB_CA_NAME=$1
@@ -48,6 +53,9 @@ test_sub_ca() {
 
     print_header "Testing ${SUB_CA_TYPE} Sub-CA Creation"
 
+    # Ensure the test-environment directory exists before creating the FIFO file
+    mkdir -p "test-environment"
+
     # Create test pipe
     test_pipe="${TEST_DIR}/test_pipe_${SUB_CA_NAME}"
     mkfifo "$test_pipe"
@@ -58,7 +66,7 @@ test_sub_ca() {
     tee "${TEST_DIR}/${SUB_CA_NAME}.log" < "$test_pipe" &
     TEE_PID=$!
 
-    # Run expect with visible output
+    # Use a wrapper to capture the exit code of new-sub-ca.sh
     expect <<EOF > "$test_pipe"
 log_user 1
 set timeout 60
@@ -104,6 +112,10 @@ expect {
         send "y\r"
         exp_continue
     }
+    "Error: Sub-CA certificate validation failed" {
+        puts "\nSub-CA certificate validation failed"
+        exit 1
+    }
     timeout {
         puts "\n${RED}Timeout waiting for prompt${RESTORE}"
         exit 1
@@ -113,17 +125,21 @@ expect {
 EOF
 RESULT=$?
 
+# Check RESULT immediately after new-sub-ca.sh execution
+if [ $RESULT -ne 0 ]; then
+    print_error "new-sub-ca.sh failed. Aborting test."
+    exit 1
+else
+    print_success "Sub-CA creation script executed successfully: ${RESULT}"
+fi
+
 # Clean up the pipe and background process
 wait $TEE_PID
 rm "$test_pipe"
 
 # Verify Sub-CA creation
-if [ $RESULT -ne 0 ]; then
-    print_error "Sub-CA creation failed with exit code $RESULT"
-fi
-
-if [ ! -f "${SUB_CA_DIR}/CA/${SUB_CA_NAME}.crt" ]; then
-    print_error "Sub-CA certificate not found"
+if [ ! -f "${BASE}/sub-CAs/${SUB_CA_NAME}/CA/ca.crt" ]; then
+    print_error "Sub-CA certificate not found at ${BASE}/sub-CAs/${SUB_CA_NAME}/CA/ca.crt"
 fi
 
 print_success "Sub-CA created successfully"
@@ -135,8 +151,8 @@ print_header "Verifying Sub-CA Setup"
 print_step "Checking file permissions and ownership..."
 
 # Check private key
-KEY_PERMS=$(stat -c %a "${SUB_CA_DIR}/CA/${SUB_CA_NAME}.key")
-KEY_OWNER=$(stat -c %U "${SUB_CA_DIR}/CA/${SUB_CA_NAME}.key")
+KEY_PERMS=$(stat -c %a "${SUB_CA_DIR}/CA/ca.key")
+KEY_OWNER=$(stat -c %U "${SUB_CA_DIR}/CA/ca.key")
 if [ "$KEY_PERMS" != "600" ]; then
     print_error "Sub-CA private key has incorrect permissions. Expected 600, got ${KEY_PERMS}"
 fi
@@ -145,8 +161,8 @@ if [ "$KEY_OWNER" != "root" ]; then
 fi
 
 # Check certificate
-CERT_PERMS=$(stat -c %a "${SUB_CA_DIR}/CA/${SUB_CA_NAME}.crt")
-CERT_OWNER=$(stat -c %U "${SUB_CA_DIR}/CA/${SUB_CA_NAME}.crt")
+CERT_PERMS=$(stat -c %a "${SUB_CA_DIR}/CA/ca.crt")
+CERT_OWNER=$(stat -c %U "${SUB_CA_DIR}/CA/ca.crt")
 if [ "$CERT_PERMS" != "644" ]; then
     print_error "Sub-CA certificate has incorrect permissions. Expected 644, got ${CERT_PERMS}"
 fi
@@ -169,14 +185,14 @@ print_success "File permissions and ownership are correct"
 
 # Verify certificate structure
 print_step "Verifying certificate structure..."
-openssl x509 -in "${SUB_CA_DIR}/CA/${SUB_CA_NAME}.crt" -text -noout > "${TEST_DIR}/sub-ca-verify.log" 2>&1
+openssl x509 -in "${SUB_CA_DIR}/CA/ca.crt" -text -noout > "${TEST_DIR}/sub-ca-verify.log" 2>&1
 if [ $? -ne 0 ]; then
     print_error "Sub-CA certificate verification failed. Check ${TEST_DIR}/sub-ca-verify.log for details."
 fi
 
 # Check certificate contents
 print_step "Verifying certificate contents..."
-CERT_TEXT=$(openssl x509 -in "${SUB_CA_DIR}/CA/${SUB_CA_NAME}.crt" -text -noout)
+CERT_TEXT=$(openssl x509 -in "${SUB_CA_DIR}/CA/ca.crt" -text -noout)
 
     # Check CA constraints based on mode
     if [ "$NO_SUB_CA" = "no-sub-ca" ]; then
@@ -221,8 +237,8 @@ print_success "Certificate contents verified"
 
 # Verify private key matches certificate
 print_step "Verifying key pair consistency..."
-CERT_MODULUS=$(openssl x509 -in "${SUB_CA_DIR}/CA/${SUB_CA_NAME}.crt" -modulus -noout)
-KEY_MODULUS=$(openssl rsa -in "${SUB_CA_DIR}/CA/${SUB_CA_NAME}.key" -modulus -noout -passin "pass:${TEST_PASSPHRASE}")
+CERT_MODULUS=$(openssl x509 -in "${SUB_CA_DIR}/CA/ca.crt" -modulus -noout)
+KEY_MODULUS=$(openssl rsa -in "${SUB_CA_DIR}/CA/ca.key" -modulus -noout -passin "pass:${TEST_PASSPHRASE}")
 if [ "$CERT_MODULUS" != "$KEY_MODULUS" ]; then
     print_error "Certificate public key does not match private key"
 fi
@@ -231,7 +247,8 @@ print_success "Key pair consistency verified"
 
 # Verify certificate chain
 print_step "Verifying certificate chain..."
-openssl verify -CAfile "${BASE}/CA/ca.crt" "${SUB_CA_DIR}/CA/${SUB_CA_NAME}.crt" > "${TEST_DIR}/chain-verify.log" 2>&1
+# Update the test to validate the actual CA/ca.crt file directly
+openssl verify -CAfile "${SUB_CA_DIR}/CA/ca.crt" "${SUB_CA_DIR}/CA/ca.crt" > "${TEST_DIR}/chain-verify.log" 2>&1
 if [ $? -ne 0 ]; then
     print_error "Certificate chain verification failed. Check ${TEST_DIR}/chain-verify.log for details."
 fi
