@@ -3,34 +3,14 @@
 ## test-sub-ca.sh - Test Sub-CA creation and operations
 ##
 
-# Source colors
-COLORS="/etc/profile.d/colors.sh"
-if [ -f "$COLORS" ]; then
-    source "$COLORS"
-fi
-
-# Helper functions
-print_header() {
-    echo -e "\n${WHITE}=== $1 ===${RESTORE}\n"
-}
-
-print_step() {
-    echo -e "${CYAN}-> $1${RESTORE}"
-}
-
-print_success() {
-    echo -e "${LGREEN}✓ $1${RESTORE}"
-}
-
-print_error() {
-    echo -e "${RED}✗ $1${RESTORE}"
-    exit 1
-}
-
 # Base directory and test environment setup
 BASE=$(realpath $(dirname $0))
 TEST_DIR="${BASE}/test-environment"
 TEST_PASSPHRASE="testpass"
+
+source "${BASE}/lib/helpers.sh" || exit 1
+
+print_header "Testing Sub-CA creation and operations"
 
 # Test both types of Sub-CAs
 SUB_CA_NORMAL="test-sub-ca-normal"
@@ -54,7 +34,9 @@ test_sub_ca() {
     print_header "Testing ${SUB_CA_TYPE} Sub-CA Creation"
 
     # Ensure the test-environment directory exists before creating the FIFO file
-    mkdir -p "test-environment"
+    if [ ! -d "${TEST_DIR}" ]; then 
+        mkdir -p "${TEST_DIR}"
+    fi
 
     # Create test pipe
     test_pipe="${TEST_DIR}/test_pipe_${SUB_CA_NAME}"
@@ -67,7 +49,7 @@ test_sub_ca() {
     TEE_PID=$!
 
     # Use a wrapper to capture the exit code of new-sub-ca.sh
-    expect <<EOF > "$test_pipe"
+    expect <<EOF >> "${test_pipe}"
 log_user 1
 set timeout 60
 spawn "${BASE}/new-sub-ca.sh" "${SUB_CA_NAME}" "${NO_SUB_CA}"
@@ -125,7 +107,6 @@ expect {
 EOF
 RESULT=$?
 
-# Check RESULT immediately after new-sub-ca.sh execution
 if [ $RESULT -ne 0 ]; then
     print_error "new-sub-ca.sh failed. Aborting test."
     exit 1

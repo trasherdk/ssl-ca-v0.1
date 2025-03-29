@@ -12,6 +12,8 @@ fi
 BASE=$(realpath $(dirname $0))
 cd "${BASE}"
 
+source "${BASE}/lib/helpers.sh" || exit 1
+
 KEYBITS=4096
 HASHALGO="sha256"
 VALID_DAYS=3650
@@ -22,50 +24,42 @@ shift
 
 CA="${BASE}/CA"
 if [ ! -d ${CA} ]; then
-	echo "* Error: Missing CA directory..."
-	exit 1
+    print_error "Missing CA directory..."
 fi
 
 # Check for root CA key
 if [ ! -f "${CA}/ca.key" -o ! -f "${CA}/ca.crt" ]; then
-	echo "Error: You must have root CA key generated first."
-	exit 1
+    print_error "You must have root CA key generated first."
 fi
 
 #   make sure environment exists
 if [ ! -d "$CA/ca.db.certs" ]; then
-	echo "* Error: Missing CA directory ca.db.certs"
-	exit 1
+    print_error "Missing CA directory ca.db.certs"
 fi
 
 if [ ! -f "$CA/ca.db.serial" ]; then
-	echo "* Error: Missing CA database file ca.db.serial"
-	exit 1
+    print_error "Missing CA database file ca.db.serial"
 fi
 
 if [ ! -f "$CA/ca.db.index" ]; then
-	echo "* Error: Missing CA database file ca.db.index"
-	exit 1
+    print_error "Missing CA database file ca.db.index"
 fi
 
 # Check for certificate directory
 CERTDIR="${BASE}/certs/${CERT}"
 if [ ! -d "${CERTDIR}" ]; then
-	echo "* Error: Missing certificate directory for ${CERT}..."
-	exit 1
+    print_error "Missing certificate directory for ${CERT}..."
 fi
 
 if [ ! -f "${CERTDIR}/${CERT}.csr" ]; then
-	echo "No $CERT.csr Found. You must create that first."
-	exit 1
+    print_error "No $CERT.csr Found. You must create that first."
 fi
 
 #  create the CA requirement to sign the cert
-CONFIG="${CERTDIR}/${CERT}/server-sign.conf"
+CONFIG="${CERTDIR}/config/server-sign.conf"
 
 if [ ! -d $(dirname ${CONFIG}) ];then
-	echo "No ${CERT} config dir found."
-	exit 1
+    mkdir -p $(dirname ${CONFIG})
 fi
 
 cat >$CONFIG <<EOT
@@ -84,7 +78,7 @@ default_days            = ${VALID_DAYS}
 default_crl_days        = 30
 default_md              = ${HASHALGO}
 preserve                = no
-x509_extensions					= server_cert
+x509_extensions			= server_cert
 policy                  = policy_anything
 [ policy_anything ]
 countryName             = optional
@@ -95,13 +89,13 @@ organizationalUnitName  = optional
 commonName              = supplied
 emailAddress            = optional
 [ server_cert ]
-#subjectKeyIdentifier		= hash
+#subjectKeyIdentifier	= hash
 authorityKeyIdentifier	= keyid:always
-extendedKeyUsage				= serverAuth,clientAuth,msSGC,nsSGC
-basicConstraints				= critical,CA:false
-subjectAltName					= @alt_names
+extendedKeyUsage		= serverAuth,clientAuth,msSGC,nsSGC
+basicConstraints		= critical,CA:false
+subjectAltName			= @alt_names
 [ alt_names ]
-DNS.1										= ${CERT}
+DNS.1					= ${CERT}
 EOT
 
 CNT=2
@@ -118,15 +112,28 @@ done
 echo -e "${ALT_NAMES}" >> ${CONFIG}
 
 #  sign the certificate
-echo "CA signing: ${CERT}.csr -> ${CERT}.crt:"
+print_step "CA signing: ${CERT}.csr -> ${CERT}.crt:"
 openssl ca -config "${CONFIG}" -out "${CERTDIR}/${CERT}.crt" -infiles "${CERTDIR}/${CERT}.csr"
+if [ $? -ne 0 ]; then
+    print_error "Failed to sign certificate"
+fi
+print_success "Certificate signed successfully"
 
-echo "CA verifying: ${CERT}.crt <-> CA cert"
+print_step "CA verifying: ${CERT}.crt <-> CA cert"
 openssl verify -CAfile "${CA}/ca.crt" "${CERTDIR}/${CERT}.crt"
+if [ $? -ne 0 ]; then
+    print_error "Failed to verify certificate"
+fi
+print_success "Certificate verified successfully"
+
 for F in ${TMP_NAMES}
 do
-  echo "CA verifying: ${F} in ${CERT}.crt) <-> CA cert"
-  openssl verify -CAfile "${CA}/ca.crt" "${CERTDIR}/${CERT}.crt"
+  print_step "Verifying domain ${F} in certificate"
+  openssl x509 -in "${CERTDIR}/${CERT}.crt" -noout -text | grep -q "DNS:${F}"
+  if [ $? -ne 0 ]; then
+    print_error "Domain ${F} not found in certificate"
+  fi
+  print_success "Domain ${F} found in certificate"
 done
 
 #  cleanup after SSLeay

@@ -174,6 +174,8 @@ scripts=(
     "server-p12.sh" 
     "user-p12.sh"
     "test-sub-ca.sh"
+    "test-server-cert.sh"
+    "test-user-cert.sh"
     )
 
 for script in "${scripts[@]}"; do

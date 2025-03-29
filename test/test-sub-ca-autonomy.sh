@@ -22,83 +22,52 @@ fi
 SUB_CA_NORMAL="${BASE}/sub-CAs/test-sub-ca-normal"
 SUB_CA_RESTRICTED="${BASE}/sub-CAs/test-sub-ca-restricted"
 
-# Test normal Sub-CA autonomy
-cd "$SUB_CA_NORMAL"
-echo "Testing autonomy of normal Sub-CA..."
-
-# Define Sub-CA type based on the directory being tested
-if [ "$PWD" = "$SUB_CA_NORMAL" ]; then
-    SUB_CA_TYPE="normal"
-elif [ "$PWD" = "$SUB_CA_RESTRICTED" ]; then
-    SUB_CA_TYPE="restricted"
-fi
-
-# Ensure the Sub-CA structure is valid before testing
-if [ ! -f "CA/ca.crt" ] || [ ! -f "CA/ca.key" ]; then
-    echo "Error: Sub-CA structure is invalid. Missing CA certificate or key."
-    exit 1
-fi
-
-# Ensure the test-environment directory exists before validation
-mkdir -p "test-environment"
-
-# Update the test to validate the CA/ca.crt file directly
-openssl verify -CAfile "CA/ca.crt" "CA/ca.crt" > "test-environment/ca-verify.log" 2>&1
-if [ $? -ne 0 ]; then
-    echo "Error: Sub-CA certificate validation failed. Check test-environment/ca-verify.log for details."
-    exit 1
-fi
-
-./test-sub-ca.sh
-cd - > /dev/null
-
-echo "Normal Sub-CA autonomy test passed."
-
-# Test restricted Sub-CA autonomy
-cd "$SUB_CA_RESTRICTED"
-echo "Testing autonomy of restricted Sub-CA..."
-
-# Define Sub-CA type based on the directory being tested
-if [ "$PWD" = "$SUB_CA_NORMAL" ]; then
-    SUB_CA_TYPE="normal"
-elif [ "$PWD" = "$SUB_CA_RESTRICTED" ]; then
-    SUB_CA_TYPE="restricted"
-fi
-
-# Remove early exit for restricted Sub-CAs and adjust logic to skip only new-sub-ca.sh
-if [ "$SUB_CA_TYPE" = "restricted" ]; then
-    echo "Testing restricted Sub-CA autonomy..."
-    # Skip new-sub-ca.sh for restricted Sub-CAs
-    if [ "$SCRIPT" = "new-sub-ca.sh" ]; then
-        echo "Skipping new-sub-ca.sh for restricted Sub-CA: $SUB_CA_NAME"
-        continue
+# Function to test a Sub-CA's autonomy
+test_sub_ca_autonomy() {
+    local sub_ca_dir="$1"
+    local sub_ca_type="$2"
+    local original_dir="$PWD"
+    
+    echo "Testing autonomy of ${sub_ca_type} Sub-CA..."
+    
+    # Change to the sub-CA directory
+    cd "$sub_ca_dir"
+    
+    # Ensure the Sub-CA structure is valid
+    if [ ! -f "CA/ca.crt" ] || [ ! -f "CA/ca.key" ]; then
+        echo "Error: Sub-CA structure is invalid in ${sub_ca_dir}. Missing CA certificate or key."
+        cd "$original_dir"
+        return 1
     fi
-fi
+    
+    # Create test environment directory
+    mkdir -p "test-environment"
+    
+    # Validate the CA certificate
+    openssl verify -CAfile "CA/ca.crt" "CA/ca.crt" > "test-environment/ca-verify.log" 2>&1
+    if [ $? -ne 0 ]; then
+        echo "Error: Sub-CA certificate validation failed. Check test-environment/ca-verify.log for details."
+        cd "$original_dir"
+        return 1
+    fi
+    
+    # Run test scripts
+    ./test-server-cert.sh
+    ./test-user-cert.sh
+    
+    # For normal Sub-CAs, also test sub-CA creation capability
+    if [ "$sub_ca_type" = "normal" ]; then
+        ./test-sub-ca.sh
+    fi
+    
+    cd "$original_dir"
+    echo "${sub_ca_type^} Sub-CA autonomy test passed."
+}
 
-# Run other tests for restricted Sub-CAs
-./new-server-cert.sh "www.example.com" "alt1.example.com" "alt2.example.com"
-./new-user-cert.sh "user@example.com"
-./test-sub-ca.sh
+# Test normal Sub-CA
+test_sub_ca_autonomy "$SUB_CA_NORMAL" "normal"
 
-# Ensure the Sub-CA structure is valid before testing
-if [ ! -f "CA/ca.crt" ] || [ ! -f "CA/ca.key" ]; then
-    echo "Error: Sub-CA structure is invalid. Missing CA certificate or key."
-    exit 1
-fi
-
-# Ensure the test-environment directory exists before validation
-mkdir -p "test-environment"
-
-# Update the test to validate the CA/ca.crt file directly
-openssl verify -CAfile "CA/ca.crt" "CA/ca.crt" > "test-environment/ca-verify.log" 2>&1
-if [ $? -ne 0 ]; then
-    echo "Error: Sub-CA certificate validation failed. Check test-environment/ca-verify.log for details."
-    exit 1
-fi
-
-./test-sub-ca.sh
-cd - > /dev/null
-
-echo "Restricted Sub-CA autonomy test passed."
+# Test restricted Sub-CA
+test_sub_ca_autonomy "$SUB_CA_RESTRICTED" "restricted"
 
 echo "All Sub-CA autonomy tests passed successfully."
