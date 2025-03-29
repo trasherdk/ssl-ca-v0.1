@@ -12,6 +12,8 @@ fi
 BASE=$(realpath $(dirname $0))
 cd "${BASE}"
 
+source "${BASE}/lib/helpers.sh" || exit 1
+
 KEYBITS=4096
 HASHALGO="sha256"
 VALID_DAYS=3650
@@ -23,14 +25,12 @@ shift
 
 CA="${BASE}/CA"
 if [ ! -d ${CA} ]; then
-    echo "* Error: Missing CA directory..."
-    exit 1
+    print_error "* Error: Missing CA directory..."
 fi
 
 # Check for root CA key
 if [ ! -f "${CA}/ca.key" -o ! -f "${CA}/ca.crt" ]; then
-    echo "Error: You must have root CA certificate generated first."
-    exit 1
+    print_error "* Error: You must have root CA certificate generated first."
 fi
 
 CERTDIR="${BASE}/certs/users/${CERT}"
@@ -40,16 +40,16 @@ if [ ! -d "${CERTDIR}" ]; then
 fi
 
 if [ -f "${CERTDIR}/${CERT}.key" ]; then
-    echo "* A certificate for ${CERT} exist. Revoke and remove existing."
-    exit 1
+    print_error "* A certificate for ${CERT} exist. Revoke and remove existing."
 fi
 
-echo "No ${CERT}.key round. Generating one"
+print_step "No ${CERT}.key round. Generating one"
 openssl genrsa -out "${CERTDIR}/${CERT}.key" ${KEYBITS}
+if [ $? -ne 0 ]; then
+    print_error "Failed to generate key"
+fi
 
-# Fill the necessary certificate data
-
-CONFIG="${CERTDIR}/${CERT}/user-cert.conf"
+CONFIG="${CERTDIR}/config/user-cert.conf"
 
 if [ ! -d $(dirname ${CONFIG}) ];then
     mkdir $(dirname ${CONFIG}) || exit 1
@@ -57,27 +57,31 @@ fi
 
 cat >${CONFIG} <<EOT
 [ req ]
-default_bits			= ${KEYBITS}
-default_keyfile			= user.key
-distinguished_name		= req_distinguished_name
-string_mask			= nombstr
-req_extensions			= v3_req
+default_bits                    = ${KEYBITS}
+default_keyfile                = user.key
+distinguished_name             = req_distinguished_name
+string_mask                    = nombstr
+req_extensions                 = v3_req
+
 [ req_distinguished_name ]
-commonName			= Common Name (eg, John Doe)
-commonName_default	= ${CERT}
-commonName_max			= 64
-emailAddress			= Email Address
-emailAddress_default	= ${CERT}@fumlersoft.dk
-emailAddress_max		= 64
+commonName                     = Common Name (eg, John Doe)
+commonName_default             = ${CERT}
+commonName_max                 = 64
+emailAddress                   = Email Address
+emailAddress_default           = ${CERT}
+emailAddress_max               = 64
+
 [ v3_req ]
-nsCertType			= client,email
-basicConstraints		= critical,CA:false
+nsCertType                     = client,email
+basicConstraints               = critical,CA:false
 EOT
 
-echo "Fill in certificate data"
+print_step "Fill in certificate data"
 openssl req -new -config $CONFIG -key "${CERTDIR}/${CERT}.key" -out "${CERTDIR}/${CERT}.csr"
+if [ $? -ne 0 ]; then
+    print_error "Failed to generate certificate request"
+fi
 
 #rm -f $CONFIG
 
-echo ""
-echo "You may now run ./sign-user-cert.sh $CERT to get it signed"
+print_step "You may now run ./sign-user-cert.sh $CERT to get it signed"

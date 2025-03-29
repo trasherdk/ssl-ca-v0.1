@@ -4,13 +4,14 @@
 ##  Copyright (c) 2000 Yeak Nai Siew, All Rights Reserved.
 ##
 
-if [ $# -ne 1 ]; then
-    echo "Usage: $(basename $0) user@email.address.com"
-    exit 1
-fi
-
 BASE=$(realpath $(dirname $0))
 cd "${BASE}"
+
+source "${BASE}/lib/helpers.sh" || exit 1
+
+if [ $# -ne 1 ]; then
+    print_error "Usage: $(basename $0) user@email.address.com"
+fi
 
 # Get the cert name
 CERT=$1
@@ -18,50 +19,42 @@ shift
 
 CA="${BASE}/CA"
 if [ ! -d ${CA} ]; then
-    echo "* Error: Missing CA directory..."
-    exit 1
+    print_error "Missing CA directory..."
 fi
 
 # Check for root CA key
 if [ ! -f "${CA}/ca.key" -o ! -f "${CA}/ca.crt" ]; then
-    echo "Error: You must have root CA certificate generated first."
-    exit 1
+    print_error "You must have root CA certificate generated first."
 fi
 
 CERTDIR="${BASE}/certs/users/${CERT}"
 if [ ! -d "${CERTDIR}" ]; then
-    echo "Error: Missing CERTDIR - certs/${CERT}"
-    echo "This should be created by ./new-user-cert.sh"
-    exit 1
+    print_error "Missing CERTDIR - certs/${CERT}. This should be created by ./new-user-cert.sh"
 fi
 
 if [ ! -f "${CERTDIR}/${CERT}.csr" ]; then
-    echo "No $CERT.csr round. You must create that first."
-    exit 1
+    print_error "No $CERT.csr found. You must create that first."
 fi
 
 # Sign it with our CA key #
 
 #   make sure environment exists
 if [ ! -d "${CA}/ca.db.certs" ]; then
-    echo "Error: Missing ca.db.certs file"
-    exit 1
-    # mkdir "${CA}/ca.db.certs"
+    print_error "Missing ca.db.certs file"
 fi
 if [ ! -f "${CA}/ca.db.serial" ]; then
-    echo "Error: Missing ca.db.serial file"
-    exit 1
-    # echo '01' >"${CA}/ca.db.serial"
+    print_error "Missing ca.db.serial file"
 fi
 if [ ! -f "${CA}/ca.db.index" ]; then
-    echo "Error: Missing ca.db.index file"
-    exit 1
-    # cp /dev/null "${CA}/ca.db.index"
+    print_error "Missing ca.db.index file"
 fi
 
 #  create the CA requirement to sign the cert
+CONFIG="${CERTDIR}/config/user-sign.conf"
 
-CONFIG="${BASE}/config/ca.config"
+if [ ! -d $(dirname ${CONFIG}) ]; then
+    mkdir -p $(dirname ${CONFIG})
+fi
 
 cat >$CONFIG <<EOT
 [ ca ]
@@ -93,10 +86,19 @@ extendedKeyUsage	= clientAuth,emailProtection
 EOT
 
 #  sign the certificate
-echo "CA signing: ${CERT}.csr -> ${CERT}.crt:"
+print_step "CA signing: ${CERT}.csr -> ${CERT}.crt:"
 openssl ca -config $CONFIG -out "${CERTDIR}/$CERT.crt" -infiles "${CERTDIR}/$CERT.csr"
-echo "CA verifying: $CERT.crt <-> CA cert"
+if [ $? -ne 0 ]; then
+    print_error "Failed to sign certificate"
+fi
+print_success "Certificate signed successfully"
+
+print_step "CA verifying: $CERT.crt <-> CA cert"
 openssl verify -CAfile "$CA/ca.crt" "${CERTDIR}/$CERT.crt"
+if [ $? -ne 0 ]; then
+    print_error "Failed to verify certificate"
+fi
+print_success "Certificate verified successfully"
 
 #  cleanup after SSLeay
 rm -f $CONFIG
