@@ -254,7 +254,15 @@ fi
 
 # Verify required scripts are copied and have correct permissions
 print_step "Checking required scripts..."
-REQUIRED_SCRIPTS=("new-server-cert.sh" "sign-server-cert.sh" "new-user-cert.sh" "sign-user-cert.sh" "revoke-cert.sh" "p12.sh")
+REQUIRED_SCRIPTS=(
+    "new-server-cert.sh"
+    "sign-server-cert.sh"
+    "new-user-cert.sh"
+    "sign-user-cert.sh"
+    "revoke-cert.sh"
+    "server-p12.sh"
+    "user-p12.sh"
+)
 for script in "${REQUIRED_SCRIPTS[@]}"; do
     SCRIPT_PATH="${SUB_CA_DIR}/${script}"
     if [ ! -f "$SCRIPT_PATH" ]; then
@@ -296,11 +304,44 @@ print_success "All required scripts and directories have correct permissions"
     echo -e "${GREEN}All ${SUB_CA_TYPE} Sub-CA tests passed successfully!${RESTORE}"
 }
 
+# Function to verify registry structure for a sub-CA
+verify_registry() {
+    local SUB_CA_NAME=$1
+    local SUB_CA_DIR="${BASE}/sub-CAs/${SUB_CA_NAME}"
+    local REGISTRY_DIR="${BASE}/certs/sub-CAs/${SUB_CA_NAME}/${SUB_CA_NAME}"
+
+    print_step "Verifying registry for ${SUB_CA_NAME}..."
+
+    # Check operational directory
+    if [ ! -d "${SUB_CA_DIR}/CA" ]; then
+        print_error "Operational directory for ${SUB_CA_NAME} not found"
+    fi
+    if [ ! -f "${SUB_CA_DIR}/CA/ca.crt" ]; then
+        print_error "Certificate for ${SUB_CA_NAME} not found in operational directory"
+    fi
+
+    # Check registry directory
+    if [ ! -d "${REGISTRY_DIR}" ]; then
+        print_error "Registry directory for ${SUB_CA_NAME} not found"
+    fi
+    if [ ! -f "${REGISTRY_DIR}/ca.crt" ]; then
+        print_error "Certificate for ${SUB_CA_NAME} not found in registry"
+    fi
+
+    # Check registry permissions
+    local perms=$(stat -c "%a" "${REGISTRY_DIR}")
+    if [ "${perms}" != "700" ]; then
+        print_error "Incorrect permissions on ${REGISTRY_DIR}: ${perms} (should be 700)"
+    fi
+}
+
 # Test normal Sub-CA (can create other CAs)
 test_sub_ca "$SUB_CA_NORMAL" "no"
+verify_registry "$SUB_CA_NORMAL"
 
 # Test restricted Sub-CA (cannot create other CAs)
 test_sub_ca "$SUB_CA_RESTRICTED" "no-sub-ca"
+verify_registry "$SUB_CA_RESTRICTED"
 
 print_header "Overall Test Summary"
 echo -e "${GREEN}All Sub-CA tests passed successfully!${RESTORE}"

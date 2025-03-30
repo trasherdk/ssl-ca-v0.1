@@ -85,10 +85,10 @@
 ## 10. Automated Testing
 - [x] Create Root CA test script with comprehensive verification
 - [x] Create Sub-CA test script
-- [ ] Create server certificate test script
-- [ ] Create user certificate test script
+- [x] Create server certificate test script (test-server-cert.sh)
+- [x] Create user certificate test script (test-user-cert.sh)
 - [ ] Create CRL test script
-- [ ] Create PKCS#12 test script
+- [x] Create PKCS#12 test script (test-p12-certs.sh)
 
 ### 10.1 Core Functionality Tests
 - [x] Test Root CA creation and verification
@@ -97,31 +97,36 @@
 - [ ] Test CRL generation and validation: Not yet tested
 - [ ] Test certificate renewal processes: Not yet tested
 - [x] Test PKCS#12 file generation and password handling: Completed with test-p12-certs.sh.
-- [ ] Test sub-CA creation with different pathlen constraints: Not yet tested.
+- [x] Test sub-CA creation with different pathlen constraints: Completed with test-sub-ca-autonomy.sh
 
 ### 10.2 Error Handling Tests
-- Test invalid certificate signing requests
-- Test revocation of already-revoked certificates
-- Test expired certificate handling
-- Test invalid password scenarios
-- Test malformed configuration files
+- [ ] Test invalid certificate signing requests
+- [ ] Test revocation of already-revoked certificates
+- [x] Test expired certificate handling (test-check-expiry.sh)
+- [x] Test invalid password scenarios (test-p12-certs.sh)
+- [ ] Test malformed configuration files
 
 ### 10.3 Integration Tests
-- Test complete workflow from root CA to end-entity certificates
-- Test certificate renewal workflow
-- Test CRL update and distribution process
-- Test expiry notification system
+- [x] Test complete workflow from root CA to end-entity certificates (test-root-ca.sh, test-sub-ca.sh)
+- [ ] Test certificate renewal workflow
+- [ ] Test CRL update and distribution process
+- [x] Test expiry notification system (test-check-expiry.sh, test-expiry.sh)
+- [ ] Improve sub-CA management:
+  - [ ] Store sub-CA certificates in both ./certs/sub-CAs/ (registry) and ./sub-CAs/ (operational)
+  - [ ] Update check-expiry.sh to check sub-CA certs from ./certs/sub-CAs/
+  - [ ] Allow detaching sub-CAs while maintaining certificate tracking
+  - [ ] Each sub-CA should follow same pattern for its own sub-CAs
 
 ### 10.4 Security Tests
-- Test private key protection mechanisms
-- Test permission settings on sensitive files
-- Test password strength requirements
-- Test certificate constraints enforcement
+- [x] Test private key protection mechanisms (test-root-ca.sh)
+- [x] Test permission settings on sensitive files (test-root-ca.sh)
+- [x] Test password strength requirements (test-p12-certs.sh)
+- [x] Test certificate constraints enforcement (test-sub-ca-autonomy.sh)
 
 ### 10.5 Performance Tests
-- Test CRL generation with large number of certificates
-- Test concurrent certificate operations
-- Test system behavior under load
+- [ ] Test CRL generation with large number of certificates
+- [ ] Test concurrent certificate operations
+- [ ] Test system behavior under load
 
 ### 10.6 Compatibility Tests
 - Test certificates with different key sizes

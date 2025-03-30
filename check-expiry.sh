@@ -1,19 +1,22 @@
 #!/bin/bash
 ##
 ##  check-expiry.sh - Check for certificates nearing expiration and send email notifications
-##  Usage: check-expiry.sh [-f|--force] [-d|--debug]
+##  Usage: check-expiry.sh [-f|--force] [-d|--debug] [--no-email]
 ##    -f, --force    Force notifications regardless of thresholds
 ##    -d, --debug    Enable debug output (verbose sendmail, detailed progress)
+##    --no-email    Disable email notifications
 ##
 
 BASE=$(realpath $(dirname $0))
 CA_DIR="${BASE}/CA"
-SUB_CA_DIR="${BASE}/sub-CAs"
+SUB_CA_DIR="${BASE}/sub-CAs"  # Operational sub-CAs
 CERTS_DIR="${BASE}/certs"
+SUB_CA_REGISTRY="${CERTS_DIR}/sub-CAs"  # Registry of all sub-CAs
 
 # Process command line arguments
 FORCE=false
 DEBUG=false
+NO_EMAIL=false
 while [ $# -gt 0 ]; do
     case "$1" in
         -f|--force)
@@ -22,6 +25,10 @@ while [ $# -gt 0 ]; do
             ;;
         -d|--debug)
             DEBUG=true
+            shift
+            ;;
+        --no-email)
+            NO_EMAIL=true
             shift
             ;;
         *)
@@ -121,6 +128,12 @@ check_certificate() {
             debug_msg "Found email in certificate: ${cert_email}"
         fi
 
+        # Skip email notifications if --no-email was specified
+        if [ "${NO_EMAIL}" = true ]; then
+            debug_msg "Email notifications disabled"
+            return 0
+        fi
+
         # Use EMAIL from .env for notifications
         if [ -z "${EMAIL}" ]; then
             echo "Warning: No EMAIL set in .env for notifications"
@@ -143,8 +156,23 @@ check_certificate() {
             return 1
         fi
 
-        # Get local hostname for From address
-        local hostname=$(hostname -f)
+        # Get external IP and use it for hostname lookup
+        local external_ip=$(curl -s ifconfig.me)
+        if [ -z "${external_ip}" ]; then
+            echo "Warning: Could not determine external IP address"
+            return 1
+        fi
+        debug_msg "External IP: ${external_ip}"
+        
+        # Get hostname for the IP
+        local host_output=$(host "${external_ip}")
+        if ! echo "${host_output}" | grep -q 'domain name pointer'; then
+            echo "Warning: Could not determine hostname for IP ${external_ip}"
+            return 1
+        fi
+        local hostname=$(echo "${host_output}" | grep -o 'domain name pointer .*' | cut -d' ' -f4 | sed 's/\.$//')
+        debug_msg "Using hostname: ${hostname}"
+        
         local from_address="ssl-ca@${hostname}"
 
         # Prepare email headers
@@ -152,14 +180,26 @@ check_certificate() {
         local message_id="<$(date +%Y%m%d%H%M%S).$$@${hostname}>"
 
         # Send using sendmail with proper headers and verbose output
-        local sendmail_opts="-i -f ssl-ca@${hostname}"
-        [ "${DEBUG}" = true ] && sendmail_opts="${sendmail_opts} -v"
+        local sendmail_opts="-i -f ssl-ca@${hostname} -F 'SSL CA Monitor' -S ssl-ca@${hostname} -oem -oi -om"
+        # Add TLS settings
+        sendmail_opts="${sendmail_opts} -oMtls=client"
+        # Always use verbose mode for better debugging
+        sendmail_opts="${sendmail_opts} -v"
 
-        if echo -e "From: SSL CA Monitor <${from_address}>\nDate: ${date_header}\nMessage-ID: ${message_id}\nTo: ${EMAIL}\nReply-To: ${from_address}\nX-Mailer: SSL CA Monitor\nX-Priority: 1\nPrecedence: high\nImportance: High\nAuto-Submitted: auto-generated\nMIME-Version: 1.0\nContent-Type: text/plain; charset=us-ascii\nSubject: Certificate Expiry Warning: ${cert_name} (${days_remaining} days)\n\n${message}" | sendmail ${sendmail_opts} "${EMAIL}"; then
-
-            status_msg "Sent expiry notification for ${cert_name} to ${EMAIL}"
+        # Use a temporary file for sendmail output
+        local sendmail_output=$(mktemp)
+        if echo -e "From: SSL CA Monitor <${from_address}>\nDate: ${date_header}\nMessage-ID: ${message_id}\nTo: ${EMAIL}\nReply-To: ${from_address}\nX-Mailer: SSL CA Monitor\nX-Priority: 1\nImportance: High\nPrecedence: high\nAuto-Submitted: auto-generated\nMIME-Version: 1.0\nContent-Type: text/plain; charset=us-ascii\nSubject: Certificate Expiry Warning: ${cert_name} (${days_remaining} days)\n\n${message}" | sendmail ${sendmail_opts} "${EMAIL}" 2>${sendmail_output}; then
+            status_msg "[INFO] Sent expiry notification for ${cert_name} to ${EMAIL}"
+            rm -f "${sendmail_output}"
         else
-            echo "Warning: Failed to send email notification via ${mx_server}"
+            # Check if it's really a failure or just verbose output
+            if grep -q "^\*\*\* Error code" "${sendmail_output}"; then
+                echo "Warning: Failed to send email notification via ${mx_server}"
+                cat "${sendmail_output}" >&2
+            else
+                status_msg "[INFO] Sent expiry notification for ${cert_name} to ${EMAIL}"
+            fi
+            rm -f "${sendmail_output}"
         fi
     fi
 
@@ -170,12 +210,28 @@ check_certificate() {
 status_msg "Checking root CA certificate..."
 check_certificate "${CA_DIR}/ca.crt" "Root CA" "${ROOT_CA_THRESHOLD}"
 
-# Check sub-CA certificates
+# Check sub-CA certificates from both operational and registry directories
+status_msg "Checking sub-CA certificates..."
+
+# 1. Check operational sub-CAs
+debug_msg "Checking operational sub-CAs in ${SUB_CA_DIR}"
 if [ -d "${SUB_CA_DIR}" ]; then
-    status_msg "Checking sub-CA certificates..."
     for sub_ca in "${SUB_CA_DIR}"/*; do
         if [ -d "${sub_ca}/CA" ]; then
-            check_certificate "${sub_ca}/CA/ca.crt" "Sub-CA $(basename "${sub_ca}")" "${SUB_CA_THRESHOLD}"
+            check_certificate "${sub_ca}/CA/ca.crt" "Sub-CA $(basename "${sub_ca}") (operational)" "${SUB_CA_THRESHOLD}"
+        fi
+    done
+fi
+
+# 2. Check registered sub-CAs
+debug_msg "Checking registered sub-CAs in ${SUB_CA_REGISTRY}"
+if [ -d "${SUB_CA_REGISTRY}" ]; then
+    for sub_ca in "${SUB_CA_REGISTRY}"/*; do
+        if [ -d "${sub_ca}" ]; then
+            sub_ca_name=$(basename "${sub_ca}")
+            if [ -f "${sub_ca}/ca.crt" ]; then
+                check_certificate "${sub_ca}/ca.crt" "Sub-CA ${sub_ca_name} (registered)" "${SUB_CA_THRESHOLD}"
+            fi
         fi
     done
 fi

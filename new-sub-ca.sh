@@ -3,38 +3,40 @@
 ##  new-sub-ca.sh - create a sub-CA certificate signed by the root CA
 ##
 
-if [ $# -lt 1 ] || [ $# -gt 2 ]; then
-    echo "Usage: $(basename $0) <sub-ca-name> [no-sub-ca]"
-    echo "  <sub-ca-name>: Name of the sub-CA"
-    echo "  [no-sub-ca]: Optional. If set, this CA can only issue user/host certificates."
-    exit 1
-fi
-
 BASE=$(realpath $(dirname $0))
 cd "${BASE}"
+
+source ./lib/helpers.sh || exit 1
+
+if [ $# -lt 1 ] || [ $# -gt 2 ]; then
+    print_soft_error "$(basename $0) <sub-ca-name> [no-sub-ca]"
+    print_soft_error "  <sub-ca-name>: Name of the sub-CA"
+    print_error "  [no-sub-ca]: Optional. If set, this CA can only issue user/host certificates."
+fi
 
 # Check if we're a restricted CA by examining our own certificate
 if [ -f "CA/ca.crt" ]; then
     cert_text=$(openssl x509 -in "CA/ca.crt" -text -noout)
     if echo "$cert_text" | grep -q "pathlen:0"; then
-        echo "Error: This is a restricted CA and cannot create new sub-CAs."
-        exit 1
+        print_error "This is a restricted CA and cannot create new sub-CAs."
     fi
 fi
 
 SUB_CA_NAME=$1
 NO_SUB_CA=${2:-no} # Default to allowing sub-CAs unless "no-sub-ca" is specified
-SUB_CA_DIR="${BASE}/sub-CAs/${SUB_CA_NAME}"
-SUB_CA_CA_DIR="${SUB_CA_DIR}/CA"
+# Define directories
 ROOT_CA_DIR="${BASE}/CA"
+SUB_CA_DIR="${BASE}/sub-CAs/${SUB_CA_NAME}"  # Operational directory
+SUB_CA_CA_DIR="${SUB_CA_DIR}/CA"
+SUB_CA_REGISTRY="${BASE}/certs/sub-CAs/${SUB_CA_NAME}"  # Registry directory
 
 # Ensure root CA exists
 if [ ! -f "${ROOT_CA_DIR}/ca.key" ] || [ ! -f "${ROOT_CA_DIR}/ca.crt" ]; then
-    echo "Error: Root CA must be created first using new-root-ca.sh."
-    exit 1
+    print_error "Root CA must be created first using new-root-ca.sh."
 fi
 
-# Create sub-CA directory structure
+print_step "Create directory structure"
+print_step "1. Operational directory for active sub-CA"
 if [ ! -d "${SUB_CA_CA_DIR}" ]; then
     mkdir -p "${SUB_CA_CA_DIR}/ca.db.certs"
     echo "01" > "${SUB_CA_CA_DIR}/ca.db.serial"
@@ -46,33 +48,38 @@ if [ ! -d "${SUB_CA_CA_DIR}" ]; then
     chmod -R g-rwx,o-rwx "${SUB_CA_DIR}"
 fi
 
-# Generate sub-CA private key
-SUB_CA_KEY="${SUB_CA_CA_DIR}/ca.key"
-if [ -f "${SUB_CA_KEY}" ]; then
-    echo "Error: Sub-CA key already exists for ${SUB_CA_NAME}."
-    exit 1
+print_step "2. Registry directory for tracking sub-CA certificates"
+if [ ! -d "${SUB_CA_REGISTRY}" ]; then
+    mkdir -p "${SUB_CA_REGISTRY}"
+    chmod -R g-rwx,o-rwx "${SUB_CA_REGISTRY}"
 fi
 
-echo "Generating private key for sub-CA: ${SUB_CA_NAME}..."
+print_step "3. Generate sub-CA private key"
+SUB_CA_KEY="${SUB_CA_CA_DIR}/ca.key"
+if [ -f "${SUB_CA_KEY}" ]; then
+    print_error "Sub-CA key already exists for ${SUB_CA_NAME}."
+fi
+
+print_step "Generating private key for sub-CA: ${SUB_CA_NAME}..."
 openssl genrsa -out "${SUB_CA_KEY}" 4096
 
-# Ensure the correct extension is used for Sub-CAs
+print_step "4. Ensure the correct extension is used for Sub-CAs"
 if [ "${NO_SUB_CA}" = "no-sub-ca" ]; then
     SUB_CA_EXTENSION="v3_restricted_sub_ca"
 else
     SUB_CA_EXTENSION="v3_ca"
 fi
 
-# Generate sub-CA CSR
+print_step "5. Generate sub-CA CSR"
 SUB_CA_CSR="${SUB_CA_CA_DIR}/${SUB_CA_NAME}.csr"
 SUB_CA_CONFIG_DIR="${SUB_CA_DIR}/config"
 SUB_CA_CONFIG="${SUB_CA_CONFIG_DIR}/${SUB_CA_NAME}-sub-ca.conf"
 
-# Create config directory
+print_step "6. Create config directory"
 mkdir -p "${SUB_CA_CONFIG_DIR}"
 chmod 700 "${SUB_CA_CONFIG_DIR}"
 
-# Create sub-CA config
+print_step "7. Create sub-CA config"
 cat >"${SUB_CA_CONFIG}" <<EOT
 [ ca ]
 default_ca = CA_default
@@ -137,37 +144,42 @@ subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid:always,issuer
 EOT
 
-echo "Generating CSR for sub-CA: ${SUB_CA_NAME}..."
+print_step "8. Generating CSR for sub-CA: ${SUB_CA_NAME}..."
 openssl req -new -key "${SUB_CA_KEY}" -out "${SUB_CA_CSR}" -config "${SUB_CA_CONFIG}"
 
 # Sign the sub-CA certificate with the root CA
 SUB_CA_CERT="${SUB_CA_CA_DIR}/ca.crt"
 ROOT_CA_CONFIG="${BASE}/config/root-ca.conf"
 
-echo "Signing sub-CA certificate with root CA..."
+print_step "9. Signing sub-CA certificate with root CA..."
 openssl ca -config "${ROOT_CA_CONFIG}" -extensions "${SUB_CA_EXTENSION}" -days 3650 \
     -in "${SUB_CA_CSR}" -out "${SUB_CA_CERT}" -keyfile "${ROOT_CA_DIR}/ca.key" \
     -cert "${ROOT_CA_DIR}/ca.crt"
 
-# Append the current CA's certificate to the new Sub-CA's certificate
+print_step "10. Append the current CA's certificate to the new Sub-CA's certificate"
 cat "${BASE}/CA/ca.crt" >> "$SUB_CA_CERT"
 
 # Validate the Sub-CA certificate after signing and appending the root CA's certificate
 # Update the openssl verify command to use the second-level Sub-CA's CA/ca.crt file
+print_step "11. Validate the Sub-CA certificate after signing and appending the root CA's certificate"
 openssl verify -CAfile "$SUB_CA_CERT" "$SUB_CA_CERT" > "${SUB_CA_CA_DIR}/ca-verify.log" 2>&1
 if [ $? -ne 0 ]; then
     echo "Error: Sub-CA certificate validation failed. Check ${SUB_CA_CA_DIR}/ca-verify.log for details."
     exit 1
 fi
 
+print_step "12. Store a copy in the registry"
+# Create registry directory for this sub-CA if it doesn't exist
+mkdir -p "${SUB_CA_REGISTRY}/${SUB_CA_NAME}"
+chmod 700 "${SUB_CA_REGISTRY}/${SUB_CA_NAME}"
+
+# Store sub-CA certificate in registry
+cp "$SUB_CA_CERT" "${SUB_CA_REGISTRY}/${SUB_CA_NAME}/ca.crt"
+
 # Cleanup
 rm -f "${SUB_CA_CSR}" "${SUB_CA_CONFIG}"
 
-echo "Sub-CA certificate created: ${SUB_CA_CERT}"
-echo "Sub-CA directory structure initialized at: ${SUB_CA_DIR}"
-
-# Copy scripts to sub-CA root
-echo "Copying scripts to sub-CA directory..."
+print_step "13. Copy scripts to sub-CA directory"
 scripts=(
     "new-server-cert.sh" 
     "new-user-cert.sh" 
@@ -175,15 +187,11 @@ scripts=(
     "check-expiry.sh" 
     "sign-server-cert.sh" 
     "sign-user-cert.sh" 
-    "export-p12.sh" 
-    "export-server-p12.sh" 
-    "export-user-p12.sh" 
-    "revoke-cert.sh" 
-    "revoke-server-cert.sh" 
-    "revoke-user-cert.sh" 
-    "p12.sh" 
-    "server-p12.sh" 
+    "server-p12.sh"
     "user-p12.sh"
+    "revoke-cert.sh"
+    "revoke-server-cert.sh"
+    "revoke-user-cert.sh"
     "test-sub-ca.sh"
     "test-server-cert.sh"
     "test-user-cert.sh"
@@ -195,12 +203,10 @@ for script in "${scripts[@]}"; do
     fi
 done
 
-# Copy helper scripts to lib directory
-echo "Copying helper scripts to lib directory..."
+print_step "14. Copy helper scripts to lib directory"
 cp -p "${BASE}/lib/helpers.sh" "${SUB_CA_DIR}/lib/"
 
-# Copy test scripts to test directory
-echo "Copying test scripts to test directory..."
+print_step "15. Copy test scripts to test directory"
 cp -p "${BASE}/test/test-sub-ca-autonomy.sh" "${SUB_CA_DIR}/test/"
 
 # Copy the root-ca.conf file to the Sub-CA's config directory
@@ -209,4 +215,4 @@ cp "${BASE}/config/root-ca.conf" "${SUB_CA_DIR}/config/"
 # Copy the test-sub-ca.sh script to the Sub-CA directory
 cp "${BASE}/test-sub-ca.sh" "${SUB_CA_DIR}/"
 
-echo "Sub-CA is now ready to operate independently."
+print_success "16. Sub-CA is now ready to operate independently."

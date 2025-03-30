@@ -1,0 +1,33 @@
+# SpamAssassin rules for SSL CA certificate expiry notifications
+
+# Create a meta rule that combines multiple characteristics
+meta SSL_CA_EXPIRY_NOTIFY      (__ssl_ca_from && __ssl_ca_subject && __ssl_ca_headers)
+score SSL_CA_EXPIRY_NOTIFY     -7.0  # Strong negative score to ensure whitelist
+describe SSL_CA_EXPIRY_NOTIFY  SSL CA Certificate Expiry Notification
+
+# Match From header with SSL CA Monitor (more lenient)
+header __ssl_ca_from          From =~ /SSL CA Monitor.*ssl-ca@/i
+
+# Match Subject format for expiry warnings (more lenient)
+header __ssl_ca_subject       Subject =~ /Certificate Expiry Warning:.+\(\d+ days\)/
+
+# Match specific headers we set (split into individual rules)
+header __ssl_ca_mailer       X-Mailer =~ /SSL CA Monitor/i
+header __ssl_ca_auto         exists:Auto-Submitted
+meta __ssl_ca_headers        (__ssl_ca_mailer && __ssl_ca_auto)
+
+# Optional: Whitelist based on high priority headers
+header __ssl_ca_priority     exists:X-Priority && exists:Importance
+
+# Debug rules to see which conditions match
+header SSL_CA_DEBUG_FROM     From =~ /(.*)/
+add_header all SSL-CA-From    "From matches: %{SSL_CA_DEBUG_FROM}" if SSL_CA_DEBUG_FROM
+
+header SSL_CA_DEBUG_SUBJECT  Subject =~ /(.*)/
+add_header all SSL-CA-Subject "Subject matches: %{SSL_CA_DEBUG_SUBJECT}" if SSL_CA_DEBUG_SUBJECT
+
+# Add a header to mark whitelisted messages
+add_header all SSL-CA-Status  "Certificate expiry notification (whitelisted)" if SSL_CA_EXPIRY_NOTIFY
+
+# Add debug headers for rule matches
+add_header all SSL-CA-Rules   "From: %{?__ssl_ca_from}, Subject: %{?__ssl_ca_subject}, Headers: %{?__ssl_ca_headers}" if __ssl_ca_from || __ssl_ca_subject || __ssl_ca_headers

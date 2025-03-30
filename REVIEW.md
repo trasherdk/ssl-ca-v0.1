@@ -74,8 +74,7 @@ This is a comprehensive Certificate Authority (CA) management system implemented
 
 ## Testing Infrastructure
 - Basic automation scripts available
-- test-ca-setup.sh for core CA operations
-- test-config.sh for configuration generation
+- test-root-ca.sh and test-sub-ca.sh for core CA operations
 - test-expiry.sh for notification system
 - test-email.sh for email delivery verification
 
