@@ -66,7 +66,10 @@ This is a comprehensive Certificate Authority (CA) management system implemented
 4. [ ] OCSP support
 5. [ ] Enhanced error handling
 6. [ ] Security best practices documentation
-7. [ ] Advanced PKCS#12 password management
+7. [x] Advanced PKCS#12 password management
+   - Separate scripts for server and user certificates
+   - Built-in verification of exported files
+   - Improved error handling and logging
 8. [ ] Web interface (planned in Svelte 5/SvelteKit)
 
 ## Testing Infrastructure
@@ -84,7 +87,7 @@ This is a comprehensive Certificate Authority (CA) management system implemented
   - Edge cases
   - Configuration validation
   - CRL management
-  - PKCS#12 password handling
+  - ~~PKCS#12 password handling~~ (Completed)
   - Unit and integration tests
 
 ### 2. Documentation

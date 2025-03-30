@@ -11,7 +11,10 @@
 - [ ] 8. Documentation for Security Best Practices
 - [ ] 9. Script for Revoking Certificates by Serial Number
 - [ ] 10. Automated Testing
-- [ ] 11. PKCS#12 Password Management
+- [x] 11. PKCS#12 Password Management
+  - Split into server-p12.sh and user-p12.sh
+  - Added verification after export
+  - Improved error handling and logging
 - [ ] 12. Periodic CRL Automation
 - [ ] 13. Create Svelte 5/SvelteKit Web Interface
 
@@ -93,7 +96,7 @@
 - [x] Test certificate chain validation
 - [ ] Test CRL generation and validation: Not yet tested
 - [ ] Test certificate renewal processes: Not yet tested
-- [ ] Test PKCS#12 file generation and password handling: Not yet tested.
+- [x] Test PKCS#12 file generation and password handling: Completed with test-p12-certs.sh.
 - [ ] Test sub-CA creation with different pathlen constraints: Not yet tested.
 
 ### 10.2 Error Handling Tests
