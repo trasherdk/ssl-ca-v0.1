@@ -177,18 +177,18 @@ CERT_TEXT=$(openssl x509 -in "${SUB_CA_DIR}/CA/ca.crt" -text -noout)
 
     # Check CA constraints based on mode
     if [ "$NO_SUB_CA" = "no-sub-ca" ]; then
-        if ! echo "$CERT_TEXT" | grep -q "CA:FALSE"; then
-            print_error "${SUB_CA_TYPE} Sub-CA certificate should have CA:FALSE"
+        if ! echo "$CERT_TEXT" | grep -q "CA:TRUE"; then
+            print_error "${SUB_CA_TYPE} Sub-CA certificate should have CA:TRUE"
         fi
-        if echo "$CERT_TEXT" | grep -q "pathlen"; then
-            print_error "${SUB_CA_TYPE} Sub-CA certificate should not have pathlen constraint"
+        if ! echo "$CERT_TEXT" | grep -q "pathlen:0"; then
+            print_error "${SUB_CA_TYPE} Sub-CA certificate should have pathlen:0 constraint"
         fi
         # Check key usage for restricted Sub-CA
-        if ! echo "$CERT_TEXT" | grep -q "Digital Signature"; then
-            print_error "${SUB_CA_TYPE} Sub-CA certificate missing Digital Signature key usage"
+        if ! echo "$CERT_TEXT" | grep -q "Certificate Sign"; then
+            print_error "${SUB_CA_TYPE} Sub-CA certificate missing Certificate Sign key usage"
         fi
-        if ! echo "$CERT_TEXT" | grep -q "Key Encipherment"; then
-            print_error "${SUB_CA_TYPE} Sub-CA certificate missing Key Encipherment key usage"
+        if ! echo "$CERT_TEXT" | grep -q "CRL Sign"; then
+            print_error "${SUB_CA_TYPE} Sub-CA certificate missing CRL Sign key usage"
         fi
     else
         if ! echo "$CERT_TEXT" | grep -q "CA:TRUE"; then

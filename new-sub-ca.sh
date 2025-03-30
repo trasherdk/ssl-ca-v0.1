@@ -13,6 +13,15 @@ fi
 BASE=$(realpath $(dirname $0))
 cd "${BASE}"
 
+# Check if we're a restricted CA by examining our own certificate
+if [ -f "CA/ca.crt" ]; then
+    cert_text=$(openssl x509 -in "CA/ca.crt" -text -noout)
+    if echo "$cert_text" | grep -q "pathlen:0"; then
+        echo "Error: This is a restricted CA and cannot create new sub-CAs."
+        exit 1
+    fi
+fi
+
 SUB_CA_NAME=$1
 NO_SUB_CA=${2:-no} # Default to allowing sub-CAs unless "no-sub-ca" is specified
 SUB_CA_DIR="${BASE}/sub-CAs/${SUB_CA_NAME}"
@@ -32,6 +41,8 @@ if [ ! -d "${SUB_CA_CA_DIR}" ]; then
     touch "${SUB_CA_CA_DIR}/ca.db.index"
     mkdir -p "${SUB_CA_DIR}/certs"
     mkdir -p "${SUB_CA_DIR}/crl"
+    mkdir -p "${SUB_CA_DIR}/lib"
+    mkdir -p "${SUB_CA_DIR}/test"
     chmod -R g-rwx,o-rwx "${SUB_CA_DIR}"
 fi
 
@@ -120,8 +131,8 @@ subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid:always,issuer
 
 [ v3_restricted_sub_ca ]
-basicConstraints        = critical,CA:false
-keyUsage                = critical,digitalSignature,keyEncipherment
+basicConstraints        = critical,CA:true,pathlen:0
+keyUsage                = critical,keyCertSign,cRLSign
 subjectKeyIdentifier    = hash
 authorityKeyIdentifier  = keyid:always,issuer
 EOT
@@ -183,6 +194,14 @@ for script in "${scripts[@]}"; do
         cp -p "${BASE}/${script}" "${SUB_CA_DIR}/"
     fi
 done
+
+# Copy helper scripts to lib directory
+echo "Copying helper scripts to lib directory..."
+cp -p "${BASE}/lib/helpers.sh" "${SUB_CA_DIR}/lib/"
+
+# Copy test scripts to test directory
+echo "Copying test scripts to test directory..."
+cp -p "${BASE}/test/test-sub-ca-autonomy.sh" "${SUB_CA_DIR}/test/"
 
 # Copy the root-ca.conf file to the Sub-CA's config directory
 cp "${BASE}/config/root-ca.conf" "${SUB_CA_DIR}/config/"

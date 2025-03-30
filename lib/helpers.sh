@@ -24,3 +24,8 @@ print_error() {
     exit 1
 }
 
+print_soft_error() {
+    echo -e "${RED}✗ $1${RESTORE}"
+    return 1
+}
+

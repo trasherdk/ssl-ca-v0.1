@@ -118,8 +118,8 @@ keyUsage                = critical,keyCertSign,cRLSign
 subjectKeyIdentifier    = hash
 
 [ v3_restricted_sub_ca ]
-basicConstraints        = critical,CA:false
-keyUsage                = critical,digitalSignature,keyEncipherment
+basicConstraints        = critical,CA:true,pathlen:0
+keyUsage                = critical,keyCertSign,cRLSign
 subjectKeyIdentifier    = hash
 EOT
 
