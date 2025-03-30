@@ -24,8 +24,10 @@ This is a comprehensive Certificate Authority (CA) management system implemented
 - Advanced certificate expiry monitoring system
 - TLS-encrypted SMTP notifications with client certificate authentication
 - Configurable expiry thresholds for different certificate types
-- Debug mode for detailed troubleshooting
+- Debug mode for detailed troubleshooting (-d flag)
 - Email extraction from certificates with fallback options
+- Verified email delivery with comprehensive testing
+- Robust error handling and logging for SMTP issues
 
 ## Technical Implementation
 
@@ -82,7 +84,7 @@ This is a comprehensive Certificate Authority (CA) management system implemented
 
 ### 1. Testing Coverage
 - Need expanded test coverage for:
-  - Certificate expiry scenarios
+  - ~~Certificate expiry scenarios~~ (Completed)
   - Edge cases
   - Configuration validation
   - CRL management

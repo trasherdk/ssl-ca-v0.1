@@ -21,7 +21,7 @@
 ## 1. Certificate Expiry Notification and Thresholds ✓
 - Add a script to check for certificates nearing expiration.
 - Notify the administrator for both root CA, sub-CAs, and issued certificates.
-- **Status**: Completed.
+- **Status**: Completed and Verified.
   - The `check-expiry.sh` script has:
     - Configurable thresholds via environment variables
     - Email extraction from certificates (with fallback to .env)
@@ -30,9 +30,12 @@
     - TLS-encrypted SMTP with client certificate authentication
     - Debug mode for troubleshooting (-d flag)
     - Clean, concise output for normal operation
-    - test-email.sh script for testing email delivery
+    - Verified email delivery with test-expiry.sh
   - Future enhancements (optional):
-    - Consider adding alternative notification methods (e.g., syslog)
+    - Multiple notification recipients
+    - Rate limiting for notifications
+    - HTML email format option
+    - Configurable notification thresholds
 
 ## 2. Sub-CA Pathlen Constraints ✓
 - Implement proper pathlen constraints for restricted sub-CAs.
