@@ -41,13 +41,20 @@ This is a comprehensive Certificate Authority (CA) management system implemented
 - TLS-encrypted communications
 - Client certificate authentication for SMTP
 - Support for CRL-based revocation
-- Configurable security constraints for sub-CAs
+- Robust sub-CA security model:
+  - Pathlen constraints (pathlen:0 for restricted sub-CAs)
+  - Proper key usage flags (keyCertSign,cRLSign)
+  - Certificate chain validation
+  - Early validation to prevent unauthorized sub-CA creation
 
 ## Project Status
 
 ### Completed Features
 1. ✓ Certificate expiry notification system
-2. ✓ Sub-CA pathlen constraints
+2. ✓ Sub-CA pathlen constraints and security model
+   - Two-tier hierarchy (normal/restricted)
+   - Proper certificate chain validation
+   - Comprehensive test coverage
 3. ✓ Basic CA operations (create, sign, revoke)
 4. ✓ PKCS#12 packaging
 5. ✓ Email notification system with TLS/client cert auth

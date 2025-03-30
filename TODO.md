@@ -31,13 +31,20 @@
   - Future enhancements (optional):
     - Consider adding alternative notification methods (e.g., syslog)
 
-## 2. Sub-CA Pathlen Constraints
-- Enable normal Sub-CAs to create other Sub-CAs by removing pathlen constraint.
-- Support restricted Sub-CAs that cannot create further Sub-CAs.
+## 2. Sub-CA Pathlen Constraints ✓
+- Implement proper pathlen constraints for restricted sub-CAs.
 - **Status**: Completed.
-  - Implemented in root CA configuration.
-  - Added support for both normal and restricted Sub-CAs.
-  - All tests passing.
+  - Implementation details:
+    - Restricted sub-CAs use `pathlen:0` constraint
+    - Proper key usage flags (`keyCertSign,cRLSign`)
+    - Early validation in `new-sub-ca.sh` to prevent restricted CAs from creating sub-CAs
+    - Comprehensive test coverage in `test-sub-ca-autonomy.sh`
+  - Security features:
+    - Two-tier CA hierarchy (normal and restricted sub-CAs)
+    - Proper certificate chain validation
+    - Autonomous operation for end-entity certificate signing
+
+
 
 ## 3. CRL Management
 - Create a script to automatically regenerate the Certificate Revocation List (CRL) periodically for both root CA and sub-CAs.
@@ -82,10 +89,10 @@
 
 ### 10.1 Core Functionality Tests
 - [x] Test Root CA creation and verification
-- [x] Test Sub-CA creation and verification.
-- [ ] Test certificate chain validation: Not yet tested.
-- [ ] Test CRL generation and validation: Not yet tested.
-- [ ] Test certificate renewal processes: Not yet tested.
+- [x] Test Sub-CA creation and verification
+- [x] Test certificate chain validation
+- [ ] Test CRL generation and validation: Not yet tested
+- [ ] Test certificate renewal processes: Not yet tested
 - [ ] Test PKCS#12 file generation and password handling: Not yet tested.
 - [ ] Test sub-CA creation with different pathlen constraints: Not yet tested.
 
