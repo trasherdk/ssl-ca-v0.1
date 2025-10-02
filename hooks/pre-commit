@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Versioned pre-commit hook for ssl-ca-v0.1
+# Blocks commits that modify sensitive repository paths unless allowed.
+
+set -eu
+
+# Allow explicit override
+if [ "${ALLOW_LOCAL_COMMITS:-0}" = "1" ]; then
+  echo "pre-commit: ALLOW_LOCAL_COMMITS=1 set, allowing commit."
+  exit 0
+fi
+
+# Allow CI
+if [ -n "${CI:-}" ]; then
+  echo "pre-commit: CI detected, allowing commit."
+  exit 0
+fi
+
+# Determine repo root
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -z "$repo_root" ]; then
+  echo "pre-commit: unable to determine repo root; aborting commit for safety." >&2
+  exit 1
+fi
+
+# Normalise path if realpath available
+if command -v realpath >/dev/null 2>&1; then
+  repo_root="$(realpath "$repo_root")"
+fi
+
+# If checkout is under a 'github' parent dir, allow commits
+case "$repo_root" in
+  *"/github/"*|*/github)
+    exit 0
+    ;;
+esac
+
+# Identify changed files in the commit (staged)
+changed_files=$(git diff --cached --name-only --diff-filter=ACMRTUXB || true)
+if [ -z "$changed_files" ]; then
+  # No staged changes? Nothing to do.
+  exit 0
+fi
+
+# Sensitive paths: edits here are blocked in this checkout
+sensitive_regex='^(CA/|config/|CRL/|scripts/|sub-CAs/)'
+
+while IFS= read -r file; do
+  if echo "$file" | egrep -q "$sensitive_regex"; then
+    echo "ERROR: Commit modifies sensitive path: $file" >&2
+    echo "This checkout appears to be a production copy. To avoid out-of-sync changes," >&2
+    echo "commits that modify CA/config state are disabled here." >&2
+    echo >&2
+    echo "Options:" >&2
+    echo "  - Move your work to a developer checkout under a '/github/' parent directory and commit there." >&2
+    echo "  - Re-run with explicit override: ALLOW_LOCAL_COMMITS=1 git commit -m '...'" >&2
+    echo "  - If you really must, use --no-verify (not recommended)." >&2
+    exit 1
+  fi
+done <<EOF
+$changed_files
+EOF
+
+exit 0
