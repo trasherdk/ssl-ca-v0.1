@@ -46,3 +46,6 @@ If you need more context or access
 - Ask for sample CA state (sanitized) or a reproducible test environment. If the user wants changes that touch security-sensitive files, request explicit confirmation and a safe test target path.
 
 End
+
+Repository edit safety note
+- IMPORTANT: this production environment has multiple copies (production vs development) of config files. To avoid making out-of-sync changes, only make code edits from a repository checked out under a `github` parent directory (for example: `/root/local/github/...`). If you're not in a `github` subdirectory, stop and ask for the preferred working copy before changing files.
