@@ -6,11 +6,12 @@
 # Source colors
 COLORS="/etc/profile.d/colors.sh"
 if [ -f "$COLORS" ]; then
+    # shellcheck source=/etc/profile.d/colors.sh
     source "$COLORS"
 fi
 
 # Base directory and test environment setup
-BASE=$(realpath $(dirname $0))
+BASE=$(realpath "$(dirname "$0")")
 TEST_DIR="${BASE}/test-environment"
 TEST_PASSPHRASE="testpass"
 
@@ -131,11 +132,11 @@ print_step "Verifying Root CA setup..."
 
 # Check file permissions
 print_step "Checking file permissions..."
-if [ $(stat -c %a "${BASE}/CA/ca.key") != "600" ]; then
+if [ "$(stat -c %a "${BASE}/CA/ca.key")" != "600" ]; then
     print_error "Root CA private key has incorrect permissions. Expected 600"
 fi
 
-if [ $(stat -c %a "${BASE}/CA/ca.crt") != "644" ]; then
+if [ "$(stat -c %a "${BASE}/CA/ca.crt")" != "644" ]; then
     print_error "Root CA certificate has incorrect permissions. Expected 644"
 fi
 
@@ -143,9 +144,10 @@ print_success "File permissions are correct"
 
 # Verify certificate structure
 print_step "Verifying certificate structure..."
-openssl x509 -in "${BASE}/CA/ca.crt" -text -noout > "${TEST_DIR}/ca-verify.log" 2>&1
-if [ $? -ne 0 ]; then
-    print_error "Root CA certificate verification failed. Check ${TEST_DIR}/ca-verify.log for details."
+if ! openssl x509 -in "${BASE}/CA/ca.crt" -text -noout > "${TEST_DIR}/ca-verify.log" 2>&1; then
+    print_error "Root CA certificate is not a valid X.509 certificate. Check ${TEST_DIR}/ca-verify.log for details."
+else
+    print_success "Root CA certificate is a valid X.509 certificate"
 fi
 
 # Check certificate contents
