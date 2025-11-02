@@ -5,7 +5,7 @@
 ##
 
 # Dynamically detect the working directory as the root
-BASE=$(realpath $(dirname $0))
+BASE=$(realpath "$(dirname "$0")")
 cd "${BASE}" || exit 1
 
 CA="${BASE}/CA"
@@ -20,7 +20,7 @@ if [ -f "$CA/ca.crt" ]; then
 fi
 
 # Create root CA directory
-if [ ! -d ${CA} ]; then
+if [ ! -d "${CA}" ]; then
 	mkdir "${CA}" || exit 1
 	chmod g-rwx,o-rwx "${CA}"
 	mkdir "${CA}/ca.db.certs"
@@ -31,6 +31,7 @@ fi
 KEYBITS=4096
 HASHALGO="sha256"
 VALID_DAYS=3650
+CRL_DAYS=90
 RANDOM_SRC=/dev/urandom
 
 # Create the master CA key. This should be done once.
@@ -49,7 +50,7 @@ fi
 
 # Add the v3_restricted_sub_ca extension to the root-ca.conf configuration
 CONFIG="${BASE}/config/root-ca.conf"
-cat >$CONFIG <<EOT
+cat >"$CONFIG" <<EOT
 [ ca ]
 default_ca = CA_default
 
@@ -61,8 +62,9 @@ new_certs_dir           = \$dir/ca.db.certs
 certificate             = \$dir/ca.crt
 serial                  = \$dir/ca.db.serial
 private_key             = \$dir/ca.key
-default_days            = 3650
-default_md              = sha256
+default_days            = ${VALID_DAYS}
+default_crl_days        = ${CRL_DAYS}
+default_md              = ${HASHALGO}
 policy                  = policy_match
 email_in_dn             = no
 rand_serial             = yes
@@ -134,6 +136,6 @@ else
 fi
 
 echo "Self-sign the root CA..."
-openssl req -new -x509 -days 3650 -config $CONFIG -key "$CA/ca.key" -out "$CA/ca.crt"
+openssl req -new -x509 -days 3650 -config "$CONFIG" -key "$CA/ca.key" -out "$CA/ca.crt"
 
 #rm -f $CONFIG
