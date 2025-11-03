@@ -34,14 +34,18 @@ fi
 log "Inspecting CRL"
 openssl crl -in "${CRL_FILE}" -noout -text | awk '/Last Update:|Next Update:|Issuer:/ {print}'
 
-# Check issuer vs CA subject
-ISSUER=$(openssl crl -in "${CRL_FILE}" -noout -issuer 2>/dev/null | sed 's/^issuer= //')
-SUBJECT=$(openssl x509 -in "${CA_DIR}/ca.crt" -noout -subject 2>/dev/null | sed 's/^subject= //')
-if [[ -n "${ISSUER}" && -n "${SUBJECT}" ]]; then
-  case "${SUBJECT}" in
-    *"${ISSUER}"*) : ;; # ok
-    *) log "Warning: Issuer does not match CA subject" ;;
-  esac
+# Robust check: compare issuer/subject name hashes
+CRL_HASH=$(openssl crl -in "${CRL_FILE}" -noout -hash 2>/dev/null || true)
+CERT_HASH=$(openssl x509 -in "${CA_DIR}/ca.crt" -noout -hash 2>/dev/null || true)
+if [[ -n "${CRL_HASH}" && -n "${CERT_HASH}" ]]; then
+  if [[ "${CRL_HASH}" != "${CERT_HASH}" ]]; then
+    # Helpful debug output in a consistent format
+    CRL_ISSUER=$(openssl crl -in "${CRL_FILE}" -noout -issuer -nameopt RFC2253 2>/dev/null | sed 's/^issuer= //')
+    CERT_SUBJECT=$(openssl x509 -in "${CA_DIR}/ca.crt" -noout -subject -nameopt RFC2253 2>/dev/null | sed 's/^subject= //')
+    log "Warning: CRL issuer hash (${CRL_HASH}) != CA subject hash (${CERT_HASH})"
+    log "         Issuer:  ${CRL_ISSUER}"
+    log "         Subject: ${CERT_SUBJECT}"
+  fi
 fi
 
 log "CRL generation and validation completed successfully"
