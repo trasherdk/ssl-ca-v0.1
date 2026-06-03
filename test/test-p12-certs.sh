@@ -33,7 +33,7 @@ test_server_p12() {
 
     # Create a server certificate first
     print_step "Creating test server certificate..."
-    "${BASE}/test-server-cert.sh" &> "${TEST_DIR}/server-cert.log"
+    "${BASE}/test/test-server-cert.sh" &> "${TEST_DIR}/server-cert.log"
     if [ $? -ne 0 ]; then
         print_error "Failed to create server certificate"
     fi
@@ -116,7 +116,7 @@ test_user_p12() {
 
     # Create a user certificate first
     print_step "Creating test user certificate..."
-    "${BASE}/test-user-cert.sh" &> "${TEST_DIR}/user-cert.log"
+    "${BASE}/test/test-user-cert.sh" &> "${TEST_DIR}/user-cert.log"
     if [ $? -ne 0 ]; then
         print_error "Failed to create user certificate. Check ${TEST_DIR}/user-cert.log for details."
     fi

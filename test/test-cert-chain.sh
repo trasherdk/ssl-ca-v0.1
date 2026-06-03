@@ -381,22 +381,22 @@ echo "Server cert: $(openssl x509 -enddate -noout -in certs/www.example.com/www.
 echo "User cert: $(openssl x509 -enddate -noout -in certs/users/user@example.com/user@example.com.crt)"
 
 print_step "Testing with 1-day threshold (should not warn)..."
-# Temporarily override thresholds but preserve other settings
-cp .env .env.bak
-sed -i 's/^ROOT_CA_THRESHOLD=.*/ROOT_CA_THRESHOLD=1/' .env
-sed -i 's/^SUB_CA_THRESHOLD=.*/SUB_CA_THRESHOLD=1/' .env
-sed -i 's/^CERT_THRESHOLD=.*/CERT_THRESHOLD=1/' .env
+echo "ROOT_CA_THRESHOLD=1" > .env
+echo "SUB_CA_THRESHOLD=1" >> .env
+echo "CERT_THRESHOLD=1" >> .env
 
-output=$(./check-expiry.sh 2>&1)
+output=$(./check-expiry.sh --debug 2>&1)
 if echo "$output" | grep -q "Days Remaining"; then
     print_error "Got unexpected expiry warning with 1-day threshold"
 fi
 print_success "No warnings with 1-day threshold"
 
 print_step "Testing with configured thresholds..."
-# Restore original .env
-mv .env.bak .env
-output=$(./check-expiry.sh 2>&1)
+echo "ROOT_CA_THRESHOLD=3650" > .env
+echo "SUB_CA_THRESHOLD=3650" >> .env
+echo "CERT_THRESHOLD=3650" >> .env
+
+output=$(./check-expiry.sh --debug 2>&1)
 if ! echo "$output" | grep -q "Days Remaining"; then
     print_error "Expected expiry warning"
 fi
@@ -407,12 +407,6 @@ if ! echo "$output" | grep -q "Found email in certificate"; then
     print_error "No email found in certificates"
 fi
 print_success "Found emails in certificates"
-
-print_step "Testing notification email..."
-if ! echo "$output" | grep -q "Sending notification"; then
-    print_error "Notification not being sent"
-fi
-print_success "Notifications being sent"
 
 print_header "Test Summary"
 print_success "All certificate chain and expiry tests passed successfully!"

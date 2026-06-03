@@ -55,12 +55,12 @@ test_sub_ca_autonomy() {
     
     # Test server and user certificate creation for all sub-CAs
     print_step "Testing certificate creation capabilities"
-    ./test-server-cert.sh || {
+    ./test/test-server-cert.sh || {
         print_soft_error "Server certificate test failed"
         cd "$original_dir"
         return 1
     }
-    ./test-user-cert.sh || {
+    ./test/test-user-cert.sh || {
         print_soft_error "User certificate test failed"
         cd "$original_dir"
         return 1
@@ -69,7 +69,7 @@ test_sub_ca_autonomy() {
     # Test sub-CA creation - should succeed for normal and fail for restricted
     print_step "Testing sub-CA creation capability"
     if [ "$sub_ca_type" = "normal" ]; then
-        ./test-sub-ca.sh || {
+        ./test/test-sub-ca.sh || {
             print_soft_error "Sub-CA test failed for normal sub-CA (should succeed)"
             cd "$original_dir"
             return 1
@@ -77,7 +77,7 @@ test_sub_ca_autonomy() {
         print_success "Normal sub-CA successfully created new sub-CA"
     else
         # For restricted sub-CA, we expect this to fail
-        if ./test-sub-ca.sh &> test-environment/sub-ca-test.log; then
+        if ./test/test-sub-ca.sh &> test-environment/sub-ca-test.log; then
             print_soft_error "Restricted sub-CA was able to create new sub-CA (should fail)"
             cd "$original_dir"
             return 1

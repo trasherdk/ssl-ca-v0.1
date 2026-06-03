@@ -192,9 +192,6 @@ scripts=(
     "revoke-cert.sh"
     "revoke-server-cert.sh"
     "revoke-user-cert.sh"
-    "test-sub-ca.sh"
-    "test-server-cert.sh"
-    "test-user-cert.sh"
     )
 
 for script in "${scripts[@]}"; do
@@ -208,11 +205,11 @@ cp -p "${BASE}/lib/helpers.sh" "${SUB_CA_DIR}/lib/"
 
 print_step "15. Copy test scripts to test directory"
 cp -p "${BASE}/test/test-sub-ca-autonomy.sh" "${SUB_CA_DIR}/test/"
+cp -p "${BASE}/test/test-sub-ca.sh" "${SUB_CA_DIR}/test/"
+cp -p "${BASE}/test/test-server-cert.sh" "${SUB_CA_DIR}/test/"
+cp -p "${BASE}/test/test-user-cert.sh" "${SUB_CA_DIR}/test/"
 
 # Copy the root-ca.conf file to the Sub-CA's config directory
 cp "${BASE}/config/root-ca.conf" "${SUB_CA_DIR}/config/"
-
-# Copy the test-sub-ca.sh script to the Sub-CA directory
-cp "${BASE}/test-sub-ca.sh" "${SUB_CA_DIR}/"
 
 print_success "16. Sub-CA is now ready to operate independently."
