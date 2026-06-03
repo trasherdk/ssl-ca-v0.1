@@ -3,13 +3,13 @@
 ## test-renew-root-ca-crl.sh - Use existing test-root-ca.sh, then run CRL renewal
 ##
 ## This test reuses the repository's comprehensive Root CA test
-## (test-root-ca.sh) to initialize a clean CA, then runs
+## (test/test-root-ca.sh) to initialize a clean CA, then runs
 ## ./renew-root-ca-crl.sh and validates the resulting CRL.
 ##
 
 set -euo pipefail
 
-BASE=$(realpath "$(dirname "$0")")
+BASE=$(realpath "$(dirname "$0")/..")
 cd "${BASE}" || exit 1
 
 CA_DIR="${BASE}/CA"
@@ -19,8 +19,8 @@ log() { printf '[%s] %s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "$*"; }
 die() { echo "ERROR: $*" >&2; exit 1; }
 
 # Prepare a clean CA via existing test harness
-log "Running test-root-ca.sh to initialize a clean Root CA"
-"${BASE}/test-root-ca.sh" > /dev/null || die "test-root-ca.sh failed"
+log "Running test/test-root-ca.sh to initialize a clean Root CA"
+"${BASE}/test/test-root-ca.sh" > /dev/null || die "test/test-root-ca.sh failed"
 
 # Run the renew script (which delegates generation to gen-root-ca-crl.sh)
 log "Running renew-root-ca-crl.sh"

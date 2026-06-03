@@ -4,7 +4,7 @@
 ##
 
 # Setup test environment
-BASE=$(realpath $(dirname $0))
+BASE=$(realpath "$(dirname "$0")/..")
 TEST_DIR="${BASE}/test-environment/expiry-tests"
 rm -rf "${TEST_DIR}"
 mkdir -p "${TEST_DIR}"

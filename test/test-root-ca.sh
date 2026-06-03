@@ -3,35 +3,12 @@
 ## test-root-ca.sh - Test Root CA creation and operations
 ##
 
-# Source colors
-COLORS="/etc/profile.d/colors.sh"
-if [ -f "$COLORS" ]; then
-    # shellcheck source=/etc/profile.d/colors.sh
-    source "$COLORS"
-fi
-
 # Base directory and test environment setup
-BASE=$(realpath "$(dirname "$0")")
+BASE=$(realpath "$(dirname "$0")/..")
 TEST_DIR="${BASE}/test-environment"
 TEST_PASSPHRASE="testpass"
 
-# Helper functions
-print_header() {
-    echo -e "\n${WHITE}=== $1 ===${RESTORE}\n"
-}
-
-print_step() {
-    echo -e "${CYAN}-> $1${RESTORE}"
-}
-
-print_success() {
-    echo -e "${LGREEN}✓ $1${RESTORE}"
-}
-
-print_error() {
-    echo -e "${RED}✗ $1${RESTORE}"
-    exit 1
-}
+source "${BASE}/lib/helpers.sh" || exit 1
 
 # Cleanup existing CA and certificate structures
 print_step "Cleaning up existing CA and certificate structures..."

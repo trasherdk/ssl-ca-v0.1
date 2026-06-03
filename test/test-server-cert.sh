@@ -3,7 +3,7 @@
 ## test-server-cert.sh - Test Server Certificate creation and signing
 ##
 
-BASE=$(realpath $(dirname $0))
+BASE=$(realpath "$(dirname "$0")/..")
 TEST_DIR="${BASE}/test-environment"
 SERVER_NAME="test-server.com"
 TEST_PASSPHRASE="testpass"

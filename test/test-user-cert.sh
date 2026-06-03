@@ -3,7 +3,7 @@
 ## test-user-cert.sh - Test User Certificate creation and signing
 ##
 
-BASE=$(realpath $(dirname $0))
+BASE=$(realpath "$(dirname "$0")/..")
 TEST_DIR="${BASE}/test-environment"
 USER_EMAIL="test-user@example.com"
 TEST_PASSPHRASE="testpass"

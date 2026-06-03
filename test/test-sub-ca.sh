@@ -4,7 +4,7 @@
 ##
 
 # Base directory and test environment setup
-BASE=$(realpath $(dirname $0))
+BASE=$(realpath "$(dirname "$0")/..")
 TEST_DIR="${BASE}/test-environment"
 TEST_PASSPHRASE="testpass"
 

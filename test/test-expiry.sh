@@ -3,7 +3,7 @@
 ##  test-expiry.sh - Test certificate expiry notifications with force flag
 ##
 
-BASE=$(realpath $(dirname $0))
+BASE=$(realpath "$(dirname "$0")/..")
 
 # Source common test functions
 source "${BASE}/scripts/test-functions.sh"
