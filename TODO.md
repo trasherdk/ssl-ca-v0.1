@@ -92,7 +92,7 @@
   - All test scripts migrated into `test/` directory
   - `run-tests.sh` test runner at project root (supports `-v`/`--verbose` and `-s`/`--stop-on-failure`)
   - Tests split into stateful (shared CA) and standalone (self-contained) groups
-  - All 10 tests passing
+  - All 13 tests passing
 - [x] Create Root CA test script with comprehensive verification
 - [x] Create Sub-CA test script
 - [x] Create server certificate test script (test-server-cert.sh)
@@ -112,11 +112,11 @@
 - [x] Test sub-CA creation with different pathlen constraints: Completed with test-sub-ca-autonomy.sh
 
 ### 10.2 Error Handling Tests
-- [ ] Test invalid certificate signing requests
-- [ ] Test revocation of already-revoked certificates
+- [x] Test invalid certificate signing requests: Completed with test-invalid-csr.sh
+- [x] Test revocation of already-revoked certificates: Completed with test-revoke-cert.sh
 - [x] Test expired certificate handling (test-check-expiry.sh)
 - [x] Test invalid password scenarios (test-p12-certs.sh)
-- [ ] Test malformed configuration files
+- [x] Test malformed configuration files: Completed with test-malformed-config.sh
 
 ### 10.3 Integration Tests
 - [x] Test complete workflow from root CA to end-entity certificates (test-root-ca.sh, test-sub-ca.sh)

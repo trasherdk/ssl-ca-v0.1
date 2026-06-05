@@ -28,6 +28,9 @@ STATEFUL_TESTS=(
     test/test-user-cert.sh
     test/test-server-cert-renewal.sh
     test/test-user-cert-renewal.sh
+    test/test-invalid-csr.sh
+    test/test-revoke-cert.sh
+    test/test-malformed-config.sh
     test/test-sub-ca.sh
     test/test-p12-certs.sh
     test/test-sub-ca-autonomy.sh
