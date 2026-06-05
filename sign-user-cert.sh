@@ -72,6 +72,7 @@ default_days            = 3650
 default_crl_days        = 30
 default_md              = sha256
 preserve                = yes
+unique_subject          = no
 x509_extensions		= user_cert
 policy                  = policy_anything
 [ policy_anything ]

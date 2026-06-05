@@ -25,19 +25,14 @@ mkdir -p "${BACKUP_DIR}"
 cp "${CERTDIR}/${USER_EMAIL}.crt" "${BACKUP_DIR}/${USER_EMAIL}.crt.$(date +%Y%m%d%H%M%S)"
 
 # Renew the user certificate
-CONFIG="${CERTDIR}/${USER_EMAIL}-user-cert.conf"
+CONFIG="${CERTDIR}/config/user-cert.conf"
 CSR="${CERTDIR}/${USER_EMAIL}.csr"
-NEW_CERT="${CERTDIR}/${USER_EMAIL}.crt"
 
 echo "Generating CSR for user certificate renewal..."
-openssl req -new -key "${CERTDIR}/${USER_EMAIL}.key" -out "${CSR}" -config "${CONFIG}"
+openssl req -new -batch -key "${CERTDIR}/${USER_EMAIL}.key" -out "${CSR}" -config "${CONFIG}"
 
 echo "Signing renewed user certificate with root CA..."
-openssl ca -config "${BASE}/config/root-ca.conf" -extensions user_cert -days 3650 \
-    -in "${CSR}" -out "${NEW_CERT}" -keyfile "${CA_DIR}/ca.key" -cert "${CA_DIR}/ca.crt"
+"${BASE}/sign-user-cert.sh" "${USER_EMAIL}"
 
-# Cleanup
-rm -f "${CSR}"
-
-echo "User certificate renewed: ${NEW_CERT}"
+echo "User certificate renewed: ${CERTDIR}/${USER_EMAIL}.crt"
 echo "Backup of the old certificate is stored in: ${BACKUP_DIR}"

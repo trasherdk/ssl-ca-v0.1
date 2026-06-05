@@ -25,19 +25,14 @@ mkdir -p "${BACKUP_DIR}"
 cp "${CERTDIR}/${SERVER_NAME}.crt" "${BACKUP_DIR}/${SERVER_NAME}.crt.$(date +%Y%m%d%H%M%S)"
 
 # Renew the server certificate
-CONFIG="${CERTDIR}/${SERVER_NAME}-server-cert.conf"
+CONFIG="${CERTDIR}/config/server-cert.conf"
 CSR="${CERTDIR}/${SERVER_NAME}.csr"
-NEW_CERT="${CERTDIR}/${SERVER_NAME}.crt"
 
 echo "Generating CSR for server certificate renewal..."
-openssl req -new -key "${CERTDIR}/${SERVER_NAME}.key" -out "${CSR}" -config "${CONFIG}"
+openssl req -new -batch -key "${CERTDIR}/${SERVER_NAME}.key" -out "${CSR}" -config "${CONFIG}"
 
 echo "Signing renewed server certificate with root CA..."
-openssl ca -config "${BASE}/config/root-ca.conf" -extensions server_cert -days 3650 \
-    -in "${CSR}" -out "${NEW_CERT}" -keyfile "${CA_DIR}/ca.key" -cert "${CA_DIR}/ca.crt"
+"${BASE}/sign-server-cert.sh" "${SERVER_NAME}"
 
-# Cleanup
-rm -f "${CSR}"
-
-echo "Server certificate renewed: ${NEW_CERT}"
+echo "Server certificate renewed: ${CERTDIR}/${SERVER_NAME}.crt"
 echo "Backup of the old certificate is stored in: ${BACKUP_DIR}"

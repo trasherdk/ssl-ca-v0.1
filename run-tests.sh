@@ -26,6 +26,8 @@ STATEFUL_TESTS=(
     test/test-root-ca.sh
     test/test-server-cert.sh
     test/test-user-cert.sh
+    test/test-server-cert-renewal.sh
+    test/test-user-cert-renewal.sh
     test/test-sub-ca.sh
     test/test-p12-certs.sh
     test/test-sub-ca-autonomy.sh

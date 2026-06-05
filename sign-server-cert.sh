@@ -78,6 +78,7 @@ default_days            = ${VALID_DAYS}
 default_crl_days        = 30
 default_md              = ${HASHALGO}
 preserve                = no
+unique_subject          = no
 x509_extensions			= server_cert
 policy                  = policy_anything
 [ policy_anything ]
