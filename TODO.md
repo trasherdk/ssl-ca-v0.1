@@ -92,20 +92,22 @@
   - All test scripts migrated into `test/` directory
   - `run-tests.sh` test runner at project root (supports `-v`/`--verbose` and `-s`/`--stop-on-failure`)
   - Tests split into stateful (shared CA) and standalone (self-contained) groups
-  - All 8 tests passing
+  - All 10 tests passing
 - [x] Create Root CA test script with comprehensive verification
 - [x] Create Sub-CA test script
 - [x] Create server certificate test script (test-server-cert.sh)
 - [x] Create user certificate test script (test-user-cert.sh)
 - [x] Create CRL test script (test-renew-root-ca-crl.sh)
 - [x] Create PKCS#12 test script (test-p12-certs.sh)
+- [x] Create server certificate renewal test script (test-server-cert-renewal.sh)
+- [x] Create user certificate renewal test script (test-user-cert-renewal.sh)
 
 ### 10.1 Core Functionality Tests
 - [x] Test Root CA creation and verification
 - [x] Test Sub-CA creation and verification
 - [x] Test certificate chain validation
 - [x] Test CRL generation and validation: Completed with test-renew-root-ca-crl.sh
-- [ ] Test certificate renewal processes
+- [x] Test certificate renewal processes: Completed with test-server-cert-renewal.sh, test-user-cert-renewal.sh
 - [x] Test PKCS#12 file generation and password handling: Completed with test-p12-certs.sh.
 - [x] Test sub-CA creation with different pathlen constraints: Completed with test-sub-ca-autonomy.sh
 
@@ -118,7 +120,7 @@
 
 ### 10.3 Integration Tests
 - [x] Test complete workflow from root CA to end-entity certificates (test-root-ca.sh, test-sub-ca.sh)
-- [ ] Test certificate renewal workflow
+- [x] Test certificate renewal workflow: Completed with test-server-cert-renewal.sh, test-user-cert-renewal.sh
 - [ ] Test CRL update and distribution process
 - [x] Test expiry notification system (test-check-expiry.sh, test-expiry.sh)
 - [ ] Improve sub-CA management:
