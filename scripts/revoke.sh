@@ -1,8 +1,15 @@
+# Source helpers for color variables
+if [ -f "${BASE}/lib/helpers.sh" ]; then
+    source ${BASE}/lib/helpers.sh
+fi
+
 function move_revoked_cert() {
- 
+
+  mkdir -p ${REVOKED} || { echo "Error: Failed to create REVOKED directory ${REVOKED}"; return 1; }
+
   if [ -d ${CERTS}/${CN} ];then
     echo "${GREEN}Moveing ${CN} to ${CN}-${PEMINDEX}${RESTORE}"
-    mv ${CERTS}/${CN} ${REVOKED}/${CN}-${PEMINDEX}
+    mv ${CERTS}/${CN} ${REVOKED}/${CN}-${PEMINDEX} || { echo "Error: Failed to move ${CERTS}/${CN} to ${REVOKED}/${CN}-${PEMINDEX}"; return 1; }
   else
     echo "${RED}${CN} Not found. Creating ${CN}-${PEMINDEX} directory${RESTORE}"
     mkdir -p ${REVOKED}/${CN}-${PEMINDEX}
