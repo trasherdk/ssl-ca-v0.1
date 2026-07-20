@@ -33,9 +33,15 @@ mkdir -p "${BASE}/certs-revoked"
 SERIAL=$(openssl x509 -in "${BASE}/certs/${SERVER_NAME}/${SERVER_NAME}.crt" -noout -serial | cut -d= -f2)
 print_step "Certificate serial to revoke: ${SERIAL}"
 
+# If the cert is already revoked from a previous test run, unrevoke it first
 if grep -q "^R" "${BASE}/CA/ca.db.index" 2>/dev/null; then
     if grep "^R" "${BASE}/CA/ca.db.index" | grep -q "${SERIAL}"; then
-        print_error "Certificate ${SERIAL} is already revoked before test started."
+        print_step "Certificate ${SERIAL} is already revoked from previous test. Unrevoking..."
+        # Change status from R to V and remove the revocation date field
+        sed -i "/${SERIAL}/s/^R/V/; s/\t[0-9A-F]\{14\}Z\t/\t\t/" "${BASE}/CA/ca.db.index"
+        # Remove the revoked directory if it exists
+        rm -rf "${BASE}/certs-revoked/${SERVER_NAME}-${SERIAL}"
+        print_success "Certificate ${SERIAL} unrevoked for testing."
     fi
 fi
 

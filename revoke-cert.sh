@@ -4,17 +4,15 @@
 ##  Copyright (c) 2000 Yeak Nai Siew, All Rights Reserved.
 ##
 
-if [ $# -ne 1 ]; then
-    echo "Usage: $(basename $0) www.domain.com "
-    exit 1
+if [ $# -gt 0 ]; then
+    # Join all parameters into a single CN string
+    CERT="$*"
+else
+    CERT=""
 fi
 
 BASE=$(realpath $(dirname $0))
 cd ${BASE}
-
-# Get the cert name
-CERT=$1
-shift
 
 CA="${BASE}/CA"
 if [ ! -d ${CA} ]; then
@@ -37,27 +35,33 @@ exec 0<${INDEX}
 CNT=0
 
 while read LINE;do
-    
+
     if [ "$(echo "${LINE}" | cut -f1 )" = "R" ];then
         continue
     fi
-    
+
     PEMINDEX=$(echo "${LINE}" | cut -f4 )
-    
-    CN=$( echo "${LINE}" | egrep -o "CN=(.*)/" | cut -f2 -d'=' | cut -f1 -d'/' )
+    CERT_TYPE=$(echo "${LINE}" | cut -f5 )
+
+    CN=$( echo "${LINE}" | egrep -o "CN=([^/]+)" | cut -f2 -d'=' )
     EM=$( echo "${LINE}" | egrep -o "emailAddress=(.*)" | cut -f2 -d'=' )
-    if [ "${CN}" = "${CERT}" ];then
+    if [ -z "${CERT}" ] || [ "${CN}" = "${CERT}" ];then
         ((CNT++))
         LIST[${CNT},hexIndex]=${PEMINDEX}
         LIST[${CNT},commonName]=${CN}
         LIST[${CNT},emailAddress]=${EM}
-        echo -e "\t${WHITE}${CNT}:\t${YELLOW}${PEMINDEX}${CYAN} ${CN} ${EM}${RESTORE}"
+        echo -e "\t${WHITE}${CNT}:\t${YELLOW}${PEMINDEX}${CYAN} [${CERT_TYPE}] ${CN} ${EM}${RESTORE}"
     fi
 done
 
 exec 0<&3
 
 if [ ${CNT} -gt 0 ];then
+    # If no CERT parameter was provided, just list and exit
+    if [ -z "${CERT}" ]; then
+        echo -e "\n\t${WHITE}Found ${CNT} unrevoked certificate(s).${RESTORE}\n"
+        exit 0
+    fi
     echo -e "\n\t\t${WHITE}Enter 0 (zero) to cancel${RESTORE}\n"
 else
     echo -e "\n\t${WHITE} No certificate found matching ${CYAN}${CERT}${RESTORE}\n"

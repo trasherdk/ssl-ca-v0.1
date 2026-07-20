@@ -37,6 +37,10 @@ echo "Signing renewed sub-CA certificate with root CA..."
 openssl ca -config "${BASE}/config/root-ca.conf" -extensions v3_sub_ca -days 3650 \
     -in "${CSR}" -out "${NEW_CERT}" -keyfile "${ROOT_CA_DIR}/ca.key" -cert "${ROOT_CA_DIR}/ca.crt"
 
+# Update the type field in the CA index
+source "${BASE}/lib/helpers.sh"
+update_ca_index_type "${ROOT_CA_DIR}" "subca"
+
 # Cleanup
 rm -f "${CSR}"
 

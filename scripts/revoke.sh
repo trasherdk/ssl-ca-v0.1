@@ -9,6 +9,10 @@ function move_revoked_cert() {
 
   if [ -d ${CERTS}/${CN} ];then
     echo "${GREEN}Moveing ${CN} to ${CN}-${PEMINDEX}${RESTORE}"
+    # Remove destination if it already exists (e.g., from previous test run)
+    if [ -d ${REVOKED}/${CN}-${PEMINDEX} ]; then
+      rm -rf ${REVOKED}/${CN}-${PEMINDEX}
+    fi
     mv ${CERTS}/${CN} ${REVOKED}/${CN}-${PEMINDEX} || { echo "Error: Failed to move ${CERTS}/${CN} to ${REVOKED}/${CN}-${PEMINDEX}"; return 1; }
   else
     echo "${RED}${CN} Not found. Creating ${CN}-${PEMINDEX} directory${RESTORE}"

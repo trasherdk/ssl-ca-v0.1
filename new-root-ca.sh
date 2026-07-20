@@ -67,7 +67,6 @@ default_crl_days        = ${CRL_DAYS}
 default_md              = ${HASHALGO}
 policy                  = policy_match
 email_in_dn             = no
-rand_serial             = yes
 
 [ policy_match ]
 countryName             = match

@@ -156,6 +156,9 @@ openssl ca -config "${ROOT_CA_CONFIG}" -extensions "${SUB_CA_EXTENSION}" -days 3
     -in "${SUB_CA_CSR}" -out "${SUB_CA_CERT}" -keyfile "${ROOT_CA_DIR}/ca.key" \
     -cert "${ROOT_CA_DIR}/ca.crt"
 
+# Update the type field in the CA index
+update_ca_index_type "${ROOT_CA_DIR}" "subca"
+
 print_step "10. Append the current CA's certificate to the new Sub-CA's certificate"
 cat "${BASE}/CA/ca.crt" >> "$SUB_CA_CERT"
 

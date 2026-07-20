@@ -120,6 +120,9 @@ if [ $? -ne 0 ]; then
 fi
 print_success "Certificate signed successfully"
 
+# Update the type field in the CA index
+update_ca_index_type "${CA}" "server"
+
 print_step "CA verifying: ${CERT}.crt <-> CA cert"
 openssl verify -CAfile "${CA}/ca.crt" "${CERTDIR}/${CERT}.crt"
 if [ $? -ne 0 ]; then
