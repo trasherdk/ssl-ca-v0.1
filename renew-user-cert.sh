@@ -45,6 +45,10 @@ if ! revoke_issued_cert "${CERT}" "${CA_DIR}" "${CA_CONFIG}"; then
     echo "Error: Failed to revoke ${CERT}."
     exit 1
 fi
+if ! regenerate_ca_crl "${BASE}"; then
+    echo "Error: Failed to regenerate the CRL after revoking ${USER_EMAIL}."
+    exit 1
+fi
 
 echo "Signing renewed user certificate..."
 export SSL_CA_BATCH=1

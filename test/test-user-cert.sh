@@ -9,6 +9,7 @@ USER_EMAIL="test-user@example.com"
 TEST_PASSPHRASE="testpass"
 
 source "${BASE}/lib/helpers.sh" || exit 1
+export CRL_URL="${CRL_URL:-http://crl.example.test/root-ca.crl.pem}"
 
 print_header "Testing User Certificate creation"
 
@@ -153,6 +154,9 @@ print_step "Verifying User Certificate structure..."
 openssl x509 -in "${BASE}/certs/users/${USER_EMAIL}/${USER_EMAIL}.crt" -text -noout > "${TEST_DIR}/user-cert-verify.log" 2>&1
 if [ $? -ne 0 ]; then
     print_error "User certificate verification failed. Check ${TEST_DIR}/user-cert-verify.log for details."
+fi
+if ! grep -q "URI:${CRL_URL}" "${TEST_DIR}/user-cert-verify.log"; then
+    print_error "User certificate missing CRL distribution point ${CRL_URL}"
 fi
 print_success "User certificate structure verified successfully."
 

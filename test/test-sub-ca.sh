@@ -9,6 +9,7 @@ TEST_DIR="${BASE}/test-environment"
 TEST_PASSPHRASE="testpass"
 
 source "${BASE}/lib/helpers.sh" || exit 1
+export CRL_URL="${CRL_URL:-http://crl.example.test/root-ca.crl.pem}"
 
 print_header "Testing Sub-CA creation and operations"
 
@@ -209,6 +210,10 @@ CERT_TEXT=$(openssl x509 -in "${SUB_CA_DIR}/CA/ca.crt" -text -noout)
             print_error "${SUB_CA_TYPE} Sub-CA certificate missing CRL Sign key usage"
         fi
     fi
+
+if ! echo "$CERT_TEXT" | grep -q "URI:${CRL_URL}"; then
+    print_error "${SUB_CA_TYPE} Sub-CA certificate missing CRL distribution point ${CRL_URL}"
+fi
 
 # Verify critical extensions
 if ! echo "$CERT_TEXT" | grep -q "X509v3 Basic Constraints: critical"; then

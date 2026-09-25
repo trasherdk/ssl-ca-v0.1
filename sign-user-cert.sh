@@ -8,6 +8,8 @@ BASE=$(realpath $(dirname $0))
 cd "${BASE}"
 
 source "${BASE}/lib/helpers.sh" || exit 1
+load_ca_env "${BASE}/.env"
+require_crl_url
 
 if [ $# -ne 1 ]; then
     print_error "Usage: $(basename $0) user@email.address.com"
@@ -82,6 +84,7 @@ emailAddress            = supplied
 #SXNetID		= 3:yeak
 subjectAltName		= email:copy
 basicConstraints	= critical,CA:false
+crlDistributionPoints	= URI:${CRL_URL}
 authorityKeyIdentifier	= keyid:always
 extendedKeyUsage	= clientAuth,emailProtection
 EOT

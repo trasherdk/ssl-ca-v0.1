@@ -55,6 +55,7 @@ extendedKeyUsage	= clientAuth,emailProtection
 EOT
 
 	openssl ca -config ${CONFIG} -revoke "${PEMDIR}/${PEMINDEX}.pem" || return 1
+	regenerate_ca_crl "${BASE}" || return 1
 
 	#  cleanup after SSLeay 
 	#rm -f ${CONFIG}

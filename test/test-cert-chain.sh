@@ -12,6 +12,7 @@ TEST_DIR="${BASE}/test-environment"
 cd "${BASE}"
 
 source "${BASE}/lib/helpers.sh" || exit 1
+export CRL_URL="${CRL_URL:-http://crl.example.test/root-ca.crl.pem}"
 
 verify_cert() {
     local cert=$1

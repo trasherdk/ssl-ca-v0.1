@@ -34,7 +34,7 @@ if [ ! -f "${ROOT_CA_DIR}/ca.key" ] || [ ! -f "${ROOT_CA_DIR}/ca.crt" ] || [ ! -
     exit 1
 fi
 
-SUB_CA_EXTENSION="v3_ca"
+SUB_CA_EXTENSION="v3_sub_ca"
 cert_text=$(openssl x509 -in "${SUB_CA_CERT}" -text -noout) || exit 1
 if echo "${cert_text}" | grep -q "pathlen:0"; then
     SUB_CA_EXTENSION="v3_restricted_sub_ca"
@@ -59,6 +59,9 @@ awk '
     /^\[ CA_default \]/ { print; print "unique_subject        = no"; next }
     { print }
 ' "${ROOT_CA_CONFIG}" > "${SIGN_CONFIG}"
+
+load_ca_env "${BASE}/.env"
+require_crl_url
 
 echo "Signing renewed sub-CA certificate with extension ${SUB_CA_EXTENSION}..."
 if ! openssl ca -config "${SIGN_CONFIG}" -extensions "${SUB_CA_EXTENSION}" -days 3650 \

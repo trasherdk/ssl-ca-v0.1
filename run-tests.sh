@@ -7,6 +7,7 @@
 
 BASE=$(realpath "$(dirname "$0")")
 source "${BASE}/lib/helpers.sh" || exit 1
+export CRL_URL="${CRL_URL:-http://crl.example.test/root-ca.crl.pem}"
 
 VERBOSE=false
 STOP_ON_FAILURE=false

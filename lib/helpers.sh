@@ -42,6 +42,38 @@ set_key_pass_args() {
     fi
 }
 
+# CRL_URL in the signing CA's .env names that CA's list. An exported value is
+# used only when the file does not set one.
+load_ca_env() {
+    local env_file="$1"
+    local file_url=""
+    if [ -f "${env_file}" ]; then
+        file_url=$(awk -F= '/^[[:space:]]*CRL_URL=/{print substr($0, index($0,"=")+1); exit}' "${env_file}")
+        file_url="${file_url#\"}"
+        file_url="${file_url%\"}"
+        file_url="${file_url#\'}"
+        file_url="${file_url%\'}"
+    fi
+    if [ -n "${file_url}" ]; then
+        CRL_URL="${file_url}"
+    fi
+}
+
+require_crl_url() {
+    if [ -z "${CRL_URL:-}" ]; then
+        print_error "CRL_URL is not set. Add it to .env for the CA that signs this certificate."
+    fi
+}
+
+# Rebuild the local CRL after a revoke. The generator lives next to this CA.
+regenerate_ca_crl() {
+    local base="$1"
+    if [ ! -x "${base}/gen-root-ca-crl.sh" ]; then
+        print_error "Cannot regenerate the CRL: ${base}/gen-root-ca-crl.sh is missing."
+    fi
+    "${base}/gen-root-ca-crl.sh"
+}
+
 # Revoke a certificate already present in the CA index.
 # Usage: revoke_issued_cert <cert_path> <ca_dir> <openssl_config>
 revoke_issued_cert() {

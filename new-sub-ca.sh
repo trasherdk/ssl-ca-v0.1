@@ -68,7 +68,7 @@ print_step "4. Ensure the correct extension is used for Sub-CAs"
 if [ "${NO_SUB_CA}" = "no-sub-ca" ]; then
     SUB_CA_EXTENSION="v3_restricted_sub_ca"
 else
-    SUB_CA_EXTENSION="v3_ca"
+    SUB_CA_EXTENSION="v3_sub_ca"
 fi
 
 print_step "5. Generate sub-CA CSR"
@@ -153,6 +153,9 @@ openssl req -new -key "${SUB_CA_KEY}" "${KEY_PASS_ARGS[@]}" -out "${SUB_CA_CSR}"
 SUB_CA_CERT="${SUB_CA_CA_DIR}/ca.crt"
 ROOT_CA_CONFIG="${BASE}/config/root-ca.conf"
 
+load_ca_env "${BASE}/.env"
+require_crl_url
+
 print_step "9. Signing sub-CA certificate with root CA..."
 openssl ca -config "${ROOT_CA_CONFIG}" -extensions "${SUB_CA_EXTENSION}" -days 3650 \
     -in "${SUB_CA_CSR}" -out "${SUB_CA_CERT}" -keyfile "${ROOT_CA_DIR}/ca.key" \
@@ -216,5 +219,10 @@ cp -p "${BASE}/test/test-user-cert.sh" "${SUB_CA_DIR}/test/"
 
 # Copy the root-ca.conf file to the Sub-CA's config directory
 cp "${BASE}/config/root-ca.conf" "${SUB_CA_DIR}/config/"
+
+# Certificates this sub-CA signs name its own CRL, not the parent's.
+if [ ! -f "${SUB_CA_DIR}/.env" ]; then
+    echo "CRL_URL=\"http://mail.example.com/${SUB_CA_NAME}.crl.pem\"" > "${SUB_CA_DIR}/.env"
+fi
 
 print_success "16. Sub-CA is now ready to operate independently."

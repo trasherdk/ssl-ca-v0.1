@@ -13,6 +13,7 @@ fi
 cd "${BASE}" || exit 1
 
 source "${BASE}/lib/helpers.sh" || exit 1
+export CRL_URL="${CRL_URL:-http://crl.example.test/root-ca.crl.pem}"
 
 # Test environment setup
 TEST_DIR="${BASE}/test-environment"

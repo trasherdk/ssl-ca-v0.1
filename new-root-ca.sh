@@ -117,11 +117,13 @@ nsCertType              = objsign,email,server
 basicConstraints        = critical,CA:true
 keyUsage                = critical,keyCertSign,cRLSign
 subjectKeyIdentifier    = hash
+crlDistributionPoints   = URI:\$ENV::CRL_URL
 
 [ v3_restricted_sub_ca ]
 basicConstraints        = critical,CA:true,pathlen:0
 keyUsage                = critical,keyCertSign,cRLSign
 subjectKeyIdentifier    = hash
+crlDistributionPoints   = URI:\$ENV::CRL_URL
 EOT
 
 # Debugging output to confirm serial number file creation

@@ -34,10 +34,14 @@ elif [ -n "${CA_PASSPHRASE:-}" ]; then
   PASSIN_ARGS=(-passin "pass:${CA_PASSPHRASE}")
 fi
 
-openssl ca -config "${CONFIG}" \
-  -gencrl -crldays "${CRL_DAYS}" -out "${CRL}" \
-  "${PASSIN_ARGS[@]}"
-
-if [ -f "${CRL}" ]; then
-  openssl crl -in "${CRL}" -noout -text
+CRL_TMP="${CRL}.tmp"
+rm -f "${CRL_TMP}"
+if ! openssl ca -config "${CONFIG}" \
+  -gencrl -crldays "${CRL_DAYS}" -out "${CRL_TMP}" \
+  "${PASSIN_ARGS[@]}"; then
+  rm -f "${CRL_TMP}"
+  echo "[ERROR] openssl ca -gencrl failed. Existing CRL left unchanged."
+  exit 1
 fi
+mv "${CRL_TMP}" "${CRL}"
+openssl crl -in "${CRL}" -noout -text

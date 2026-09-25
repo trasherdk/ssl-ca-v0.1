@@ -9,6 +9,7 @@ TEST_DIR="${BASE}/test-environment"
 TEST_PASSPHRASE="testpass"
 
 source "${BASE}/lib/helpers.sh" || exit 1
+export CRL_URL="${CRL_URL:-http://crl.example.test/root-ca.crl.pem}"
 
 # Cleanup existing CA and certificate structures
 print_step "Cleaning up existing CA and certificate structures..."
@@ -142,6 +143,9 @@ if ! echo "$CERT_TEXT" | grep -q "Certificate Sign"; then
 fi
 if ! echo "$CERT_TEXT" | grep -q "CRL Sign"; then
     print_error "Root CA certificate missing CRL Sign key usage"
+fi
+if echo "$CERT_TEXT" | grep -q "CRL Distribution Points"; then
+    print_error "Root CA certificate must not name a CRL distribution point"
 fi
 
 # Verify certificate fields

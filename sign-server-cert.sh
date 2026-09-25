@@ -13,6 +13,8 @@ BASE=$(realpath $(dirname $0))
 cd "${BASE}"
 
 source "${BASE}/lib/helpers.sh" || exit 1
+load_ca_env "${BASE}/.env"
+require_crl_url
 
 KEYBITS=4096
 HASHALGO="sha256"
@@ -94,6 +96,7 @@ emailAddress            = optional
 authorityKeyIdentifier	= keyid:always
 extendedKeyUsage		= serverAuth,clientAuth,msSGC,nsSGC
 basicConstraints		= critical,CA:false
+crlDistributionPoints	= URI:${CRL_URL}
 subjectAltName			= @alt_names
 [ alt_names ]
 DNS.1					= ${CERT}

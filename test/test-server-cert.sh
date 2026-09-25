@@ -9,6 +9,7 @@ SERVER_NAME="test-server.com"
 TEST_PASSPHRASE="testpass"
 
 source "${BASE}/lib/helpers.sh" || exit 1
+export CRL_URL="${CRL_URL:-http://crl.example.test/root-ca.crl.pem}"
 
 print_header "Testing Server Certificate creation"
 
@@ -151,6 +152,9 @@ if [ $? -ne 0 ]; then
     print_error "Server certificate verification failed. Check ${TEST_DIR}/server-cert-verify.log for details."
 fi
 
+if ! grep -q "URI:${CRL_URL}" "${TEST_DIR}/server-cert-verify.log"; then
+    print_error "Server certificate missing CRL distribution point ${CRL_URL}"
+fi
 print_success "Server certificate structure verified successfully."
 
 # Verify Server Certificate chain

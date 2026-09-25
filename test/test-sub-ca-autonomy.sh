@@ -11,6 +11,7 @@ else
 fi
 
 source "${BASE}/lib/helpers.sh" || exit 1
+export CRL_URL="${CRL_URL:-http://crl.example.test/root-ca.crl.pem}"
 
 # Check if the script is run from the correct directory
 if [[ -d "${BASE}/sub-CAs" ]]; then

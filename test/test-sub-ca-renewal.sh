@@ -8,6 +8,7 @@ TEST_DIR="${BASE}/test-environment"
 TEST_PASSPHRASE="testpass"
 
 source "${BASE}/lib/helpers.sh" || exit 1
+export CRL_URL="${CRL_URL:-http://crl.example.test/root-ca.crl.pem}"
 
 print_header "Testing Sub-CA certificate renewal"
 
