@@ -29,6 +29,19 @@ print_soft_error() {
     return 1
 }
 
+# Fill KEY_PASS_ARGS for openssl -passin or -passout.
+# OPENSSL_PASSIN is passed through as-is (for example pass:secret or env:VAR).
+# CA_PASSPHRASE is the raw secret. With neither set, OpenSSL prompts.
+set_key_pass_args() {
+    local direction="$1"
+    KEY_PASS_ARGS=()
+    if [ -n "${OPENSSL_PASSIN:-}" ]; then
+        KEY_PASS_ARGS=("-${direction}" "${OPENSSL_PASSIN}")
+    elif [ -n "${CA_PASSPHRASE:-}" ]; then
+        KEY_PASS_ARGS=("-${direction}" "pass:${CA_PASSPHRASE}")
+    fi
+}
+
 # Update the type field in the CA index file for the most recently added certificate
 # Usage: update_ca_index_type <ca_dir> <type>
 # Types: server, user, subca

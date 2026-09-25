@@ -54,6 +54,10 @@ log_user 1
 set timeout 60
 spawn "${BASE}/new-sub-ca.sh" "${SUB_CA_NAME}" "${NO_SUB_CA}"
 expect {
+    "PEM pass phrase" {
+        send "${TEST_PASSPHRASE}\r"
+        exp_continue
+    }
     "Enter pass phrase for" {
         send "${TEST_PASSPHRASE}\r"
         exp_continue
@@ -218,6 +222,9 @@ print_success "Certificate contents verified"
 
 # Verify private key matches certificate
 print_step "Verifying key pair consistency..."
+if openssl rsa -in "${SUB_CA_DIR}/CA/ca.key" -modulus -noout </dev/null >/dev/null 2>&1; then
+    print_error "Sub-CA private key is not encrypted"
+fi
 CERT_MODULUS=$(openssl x509 -in "${SUB_CA_DIR}/CA/ca.crt" -modulus -noout)
 KEY_MODULUS=$(openssl rsa -in "${SUB_CA_DIR}/CA/ca.key" -modulus -noout -passin "pass:${TEST_PASSPHRASE}")
 if [ "$CERT_MODULUS" != "$KEY_MODULUS" ]; then

@@ -61,7 +61,8 @@ if [ -f "${SUB_CA_KEY}" ]; then
 fi
 
 print_step "Generating private key for sub-CA: ${SUB_CA_NAME}..."
-openssl genrsa -out "${SUB_CA_KEY}" 4096
+set_key_pass_args passout
+openssl genrsa -aes256 "${KEY_PASS_ARGS[@]}" -out "${SUB_CA_KEY}" 4096 || exit 1
 
 print_step "4. Ensure the correct extension is used for Sub-CAs"
 if [ "${NO_SUB_CA}" = "no-sub-ca" ]; then
@@ -145,7 +146,8 @@ authorityKeyIdentifier  = keyid:always,issuer
 EOT
 
 print_step "8. Generating CSR for sub-CA: ${SUB_CA_NAME}..."
-openssl req -new -key "${SUB_CA_KEY}" -out "${SUB_CA_CSR}" -config "${SUB_CA_CONFIG}"
+set_key_pass_args passin
+openssl req -new -key "${SUB_CA_KEY}" "${KEY_PASS_ARGS[@]}" -out "${SUB_CA_CSR}" -config "${SUB_CA_CONFIG}"
 
 # Sign the sub-CA certificate with the root CA
 SUB_CA_CERT="${SUB_CA_CA_DIR}/ca.crt"

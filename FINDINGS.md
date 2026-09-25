@@ -22,7 +22,7 @@ OCSP, a web UI, a general audit log, and a CRL cron are already in `TODO.md` and
 
 ## High
 
-- [ ] **1. Sub-CA and end-entity private keys are stored unencrypted.** The root key is created with AES-256. Sub-CA, server, and user keys are created with `openssl genrsa` and no cipher, so a copy of the CA directory is enough to issue or impersonate. `REVIEW.md` describes this as proper private key protection. The sub-CA test passes `-passin` against that key, which does not show the key is encrypted. Evidence: `new-root-ca.sh:41` uses `-aes256`. `new-sub-ca.sh:64`, `new-server-cert.sh:47`, and `new-user-cert.sh:47` do not. `test/test-sub-ca.sh:222`.
+- [x] **1. Sub-CA and end-entity private keys are stored unencrypted.** The root key is created with AES-256. Sub-CA, server, and user keys are created with `openssl genrsa` and no cipher, so a copy of the CA directory is enough to issue or impersonate. `REVIEW.md` describes this as proper private key protection. The sub-CA test passes `-passin` against that key, which does not show the key is encrypted. Evidence: `new-root-ca.sh:41` uses `-aes256`. `new-sub-ca.sh:64`, `new-server-cert.sh:47`, and `new-user-cert.sh:47` do not. `test/test-sub-ca.sh:222`.
 
   **Suggestion.** Encrypt the sub-CA, server, and user keys the same way the root key is already encrypted: `openssl genrsa -aes256`.
 
@@ -33,6 +33,10 @@ OCSP, a web UI, a general audit log, and a CRL cron are already in `TODO.md` and
   `test/test-sub-ca.sh` should stop treating `-passin` as proof of encryption. Assert that `openssl rsa -in CA/ca.key -noout` fails with no passphrase, and that the same command succeeds with the test passphrase. Do the same for a server key and a user key.
 
   Directory mode `700` stays as it is. Encryption is what still protects a copied tree.
+
+  Implemented for issuing keys only. `new-sub-ca.sh` generates `CA/ca.key` with `-aes256`, and later reads of that key prompt, or use `OPENSSL_PASSIN` / `CA_PASSPHRASE` when set. `test-sub-ca.sh` refuses a sub-CA key that opens with no passphrase.
+
+  Server and user keys stay unencrypted. Those files are what Apache and a mail client load, and a passphrase there stops an unattended restart. The root key and sub-CA keys are the ones that can issue certificates, so they keep the passphrase.
 
 - [ ] **2. `renew-sub-ca.sh` does not match the files `new-sub-ca.sh` writes.** Creation stores `CA/ca.key` and `CA/ca.crt`, then deletes the CSR config. Renewal looks for `CA/<name>.key` and `CA/<name>.crt`, then reads `config/<name>-sub-ca.conf`. It exits before signing. If those paths were aligned, it still always requests the `v3_sub_ca` extension, so a restricted sub-CA would lose `pathlen:0`, and it does not append the parent certificate the way creation does. Evidence: `new-sub-ca.sh` writes `CA/ca.key` and `CA/ca.crt` (lines 58 and 151) and deletes the config at line 183. `renew-sub-ca.sh:18` and `:29` look for the other names. The signing extension is fixed at `renew-sub-ca.sh:37`.
 

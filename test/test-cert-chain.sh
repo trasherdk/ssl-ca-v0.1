@@ -105,6 +105,10 @@ log_user 1
 set timeout 60
 spawn ./new-sub-ca.sh test-sub
 expect {
+    "PEM pass phrase" {
+        send "${TEST_PASSPHRASE}\r"
+        exp_continue
+    }
     "Enter pass phrase for" {
         send "${TEST_PASSPHRASE}\r"
         exp_continue
