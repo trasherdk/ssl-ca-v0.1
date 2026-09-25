@@ -114,7 +114,11 @@ echo -e "${ALT_NAMES}" >> ${CONFIG}
 
 #  sign the certificate
 print_step "CA signing: ${CERT}.csr -> ${CERT}.crt:"
-openssl ca -config "${CONFIG}" -out "${CERTDIR}/${CERT}.crt" -infiles "${CERTDIR}/${CERT}.csr"
+BATCH_ARGS=()
+if [ "${SSL_CA_BATCH:-}" = "1" ]; then
+    BATCH_ARGS=(-batch)
+fi
+openssl ca -config "${CONFIG}" "${BATCH_ARGS[@]}" -out "${CERTDIR}/${CERT}.crt" -infiles "${CERTDIR}/${CERT}.csr"
 if [ $? -ne 0 ]; then
     print_error "Failed to sign certificate"
 fi

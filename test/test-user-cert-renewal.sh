@@ -22,6 +22,7 @@ if [ ! -f "${BASE}/certs/users/${USER_EMAIL}/${USER_EMAIL}.crt" ]; then
 fi
 
 SERIAL_BEFORE=$(openssl x509 -in "${BASE}/certs/users/${USER_EMAIL}/${USER_EMAIL}.crt" -noout -serial | cut -d= -f2)
+SUBJECT_BEFORE=$(openssl x509 -in "${BASE}/certs/users/${USER_EMAIL}/${USER_EMAIL}.crt" -noout -subject)
 print_step "Serial before renewal: ${SERIAL_BEFORE}"
 
 print_step "Renewing user certificate..."
@@ -77,6 +78,14 @@ SERIAL_AFTER=$(openssl x509 -in "${BASE}/certs/users/${USER_EMAIL}/${USER_EMAIL}
 print_step "Serial after renewal: ${SERIAL_AFTER}"
 if [ "${SERIAL_BEFORE}" = "${SERIAL_AFTER}" ]; then
     print_error "Certificate serial did not change after renewal."
+fi
+
+SUBJECT_AFTER=$(openssl x509 -in "${BASE}/certs/users/${USER_EMAIL}/${USER_EMAIL}.crt" -noout -subject)
+if [ "${SUBJECT_BEFORE}" != "${SUBJECT_AFTER}" ]; then
+    print_error "User certificate subject changed during renewal."
+fi
+if ! awk -F'\t' -v serial="${SERIAL_BEFORE}" 'BEGIN { IGNORECASE=1 } $1=="R" && $4==serial { found=1 } END { exit !found }' "${BASE}/CA/ca.db.index"; then
+    print_error "Previous user certificate ${SERIAL_BEFORE} was not revoked."
 fi
 
 if ! openssl verify -CAfile "${BASE}/CA/ca.crt" "${BASE}/certs/users/${USER_EMAIL}/${USER_EMAIL}.crt" > /dev/null 2>&1; then

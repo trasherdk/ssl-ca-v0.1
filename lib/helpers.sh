@@ -42,7 +42,17 @@ set_key_pass_args() {
     fi
 }
 
-# Update the type field in the CA index file for the most recently added certificate
+# Revoke a certificate already present in the CA index.
+# Usage: revoke_issued_cert <cert_path> <ca_dir> <openssl_config>
+revoke_issued_cert() {
+    local cert_path="$1"
+    local ca_dir="$2"
+    local config="$3"
+    set_key_pass_args passin
+    openssl ca -config "${config}" -revoke "${cert_path}" \
+        -keyfile "${ca_dir}/ca.key" -cert "${ca_dir}/ca.crt" \
+        "${KEY_PASS_ARGS[@]}"
+}
 # Usage: update_ca_index_type <ca_dir> <type>
 # Types: server, user, subca
 update_ca_index_type() {

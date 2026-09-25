@@ -22,6 +22,7 @@ if [ ! -f "${BASE}/certs/${SERVER_NAME}/${SERVER_NAME}.crt" ]; then
 fi
 
 SERIAL_BEFORE=$(openssl x509 -in "${BASE}/certs/${SERVER_NAME}/${SERVER_NAME}.crt" -noout -serial | cut -d= -f2)
+SUBJECT_BEFORE=$(openssl x509 -in "${BASE}/certs/${SERVER_NAME}/${SERVER_NAME}.crt" -noout -subject)
 print_step "Serial before renewal: ${SERIAL_BEFORE}"
 
 print_step "Renewing server certificate..."
@@ -77,6 +78,17 @@ SERIAL_AFTER=$(openssl x509 -in "${BASE}/certs/${SERVER_NAME}/${SERVER_NAME}.crt
 print_step "Serial after renewal: ${SERIAL_AFTER}"
 if [ "${SERIAL_BEFORE}" = "${SERIAL_AFTER}" ]; then
     print_error "Certificate serial did not change after renewal."
+fi
+
+SUBJECT_AFTER=$(openssl x509 -in "${BASE}/certs/${SERVER_NAME}/${SERVER_NAME}.crt" -noout -subject)
+if [ "${SUBJECT_BEFORE}" != "${SUBJECT_AFTER}" ]; then
+    print_error "Server certificate subject changed during renewal."
+fi
+if ! openssl x509 -in "${BASE}/certs/${SERVER_NAME}/${SERVER_NAME}.crt" -noout -text | grep -q "DNS:www.${SERVER_NAME}"; then
+    print_error "Extra DNS name www.${SERVER_NAME} was dropped during renewal."
+fi
+if ! awk -F'\t' -v serial="${SERIAL_BEFORE}" 'BEGIN { IGNORECASE=1 } $1=="R" && $4==serial { found=1 } END { exit !found }' "${BASE}/CA/ca.db.index"; then
+    print_error "Previous server certificate ${SERIAL_BEFORE} was not revoked."
 fi
 
 if ! openssl verify -CAfile "${BASE}/CA/ca.crt" "${BASE}/certs/${SERVER_NAME}/${SERVER_NAME}.crt" > /dev/null 2>&1; then
