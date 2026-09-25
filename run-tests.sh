@@ -32,6 +32,7 @@ STATEFUL_TESTS=(
     test/test-revoke-cert.sh
     test/test-malformed-config.sh
     test/test-sub-ca.sh
+    test/test-sub-ca-renewal.sh
     test/test-p12-certs.sh
     test/test-sub-ca-autonomy.sh
 )

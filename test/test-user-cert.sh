@@ -58,7 +58,7 @@ expect {
         exp_continue
     }
     "Error*" {
-        puts "\n${RED}Error: User certificate creation failed${RESTORE}"
+        puts "\nError: User certificate creation failed"
         exit 1
     }
     timeout {
@@ -114,7 +114,7 @@ expect {
         exp_continue
     }
     "Error*" {
-        puts "\n${RED}Error: User certificate signing failed${RESTORE}"
+        puts "\nError: User certificate signing failed"
         exit 1
     }
     timeout {

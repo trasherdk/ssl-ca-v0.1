@@ -59,7 +59,7 @@ expect {
         exp_continue
     }
     "Error*" {
-        puts "\n${RED}Error: Server certificate creation failed${RESTORE}"
+        puts "\nError: Server certificate creation failed"
         exit 1
     }
     timeout {
@@ -115,7 +115,7 @@ expect {
         exp_continue
     }
     "Error*" {
-        puts "\n${RED}Error: Server certificate signing failed${RESTORE}"
+        puts "\nError: Server certificate signing failed"
         exit 1
     }
     "Timeout*" {

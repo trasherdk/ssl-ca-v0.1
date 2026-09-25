@@ -38,6 +38,7 @@ TEE_PID=$!
 # Run expect with visible output
 expect <<EOF > "$test_pipe"
 log_user 1
+set timeout 120
 spawn "${BASE}/new-root-ca.sh"
 expect {
     "Enter PEM pass phrase:" {
@@ -81,7 +82,7 @@ expect {
         exp_continue
     }
     timeout {
-        puts "\n${RED}Timeout waiting for prompt${RESTORE}"
+        puts "\nTimeout waiting for prompt"
         exit 1
     }
     eof

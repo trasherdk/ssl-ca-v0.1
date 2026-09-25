@@ -103,7 +103,7 @@ expect {
         exit 1
     }
     timeout {
-        puts "\n${RED}Timeout waiting for prompt${RESTORE}"
+        puts "\nTimeout waiting for prompt"
         exit 1
     }
     eof
@@ -222,7 +222,8 @@ print_success "Certificate contents verified"
 
 # Verify private key matches certificate
 print_step "Verifying key pair consistency..."
-if openssl rsa -in "${SUB_CA_DIR}/CA/ca.key" -modulus -noout </dev/null >/dev/null 2>&1; then
+# Do not call openssl here. A rejected -passin still reads the terminal.
+if ! grep -q "ENCRYPTED" "${SUB_CA_DIR}/CA/ca.key"; then
     print_error "Sub-CA private key is not encrypted"
 fi
 CERT_MODULUS=$(openssl x509 -in "${SUB_CA_DIR}/CA/ca.crt" -modulus -noout)

@@ -62,7 +62,7 @@ test_server_p12() {
                 exp_continue
             }
             "Error*" {
-                puts "\n${RED}Error: Server certificate export failed${RESTORE}"
+                puts "\nError: Server certificate export failed"
                 exit 1
             }
             timeout {
@@ -146,7 +146,7 @@ test_user_p12() {
                 exp_continue
             }
             "Error*" {
-                puts "\n${RED}Error: User certificate export failed${RESTORE}"
+                puts "\nError: User certificate export failed"
                 exit 1
             }
             timeout {
