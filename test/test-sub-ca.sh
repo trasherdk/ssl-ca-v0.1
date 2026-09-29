@@ -265,6 +265,10 @@ if ! [[ $SERIAL =~ ^[0-9A-F]{2}$ ]]; then
     print_error "Invalid serial number format"
 fi
 
+if [ ! -f "${SUB_CA_DIR}/scripts/revoke.sh" ]; then
+    print_error "scripts/revoke.sh was not copied into the Sub-CA directory"
+fi
+
 # Verify required scripts are copied and have correct permissions
 print_step "Checking required scripts..."
 REQUIRED_SCRIPTS=(
@@ -273,6 +277,7 @@ REQUIRED_SCRIPTS=(
     "new-user-cert.sh"
     "sign-user-cert.sh"
     "revoke-cert.sh"
+    "gen-root-ca-crl.sh"
     "server-p12.sh"
     "user-p12.sh"
 )

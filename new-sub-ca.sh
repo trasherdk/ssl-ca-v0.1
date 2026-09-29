@@ -189,24 +189,32 @@ rm -f "${SUB_CA_CSR}" "${SUB_CA_CONFIG}"
 
 print_step "13. Copy scripts to sub-CA directory"
 scripts=(
-    "new-server-cert.sh" 
-    "new-user-cert.sh" 
-    "new-sub-ca.sh" 
-    "check-expiry.sh" 
-    "sign-server-cert.sh" 
-    "sign-user-cert.sh" 
+    "new-server-cert.sh"
+    "new-user-cert.sh"
+    "new-sub-ca.sh"
+    "check-expiry.sh"
+    "sign-server-cert.sh"
+    "sign-user-cert.sh"
     "server-p12.sh"
     "user-p12.sh"
     "revoke-cert.sh"
-    "revoke-server-cert.sh"
-    "revoke-user-cert.sh"
+    "gen-root-ca-crl.sh"
     )
 
 for script in "${scripts[@]}"; do
-    if [ -f "${BASE}/${script}" ]; then
-        cp -p "${BASE}/${script}" "${SUB_CA_DIR}/"
+    if [ ! -f "${BASE}/${script}" ]; then
+        echo "Error: Required script ${script} is missing and was not copied."
+        exit 1
     fi
+    cp -p "${BASE}/${script}" "${SUB_CA_DIR}/"
 done
+
+mkdir -p "${SUB_CA_DIR}/scripts"
+if [ ! -f "${BASE}/scripts/revoke.sh" ]; then
+    echo "Error: Required script scripts/revoke.sh is missing and was not copied."
+    exit 1
+fi
+cp -p "${BASE}/scripts/revoke.sh" "${SUB_CA_DIR}/scripts/revoke.sh"
 
 print_step "14. Copy helper scripts to lib directory"
 cp -p "${BASE}/lib/helpers.sh" "${SUB_CA_DIR}/lib/"
