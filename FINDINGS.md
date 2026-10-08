@@ -72,6 +72,12 @@ OCSP, a web UI, a general audit log, and a CRL cron are already in `TODO.md` and
 
 - [ ] **6. PKCS#12 export verifies with `TEST_PASSPHRASE` after writing the file.** Export prompts for a password. Verification then opens the new `.p12` with `pass:${TEST_PASSPHRASE}`. The test suite exports that variable, so tests pass. An operator who does not set it gets a failed script after the `.p12` already exists. README and the Copilot instructions still tell the operator to run `./p12.sh`, which is not a script in this tree. The live scripts are `server-p12.sh` and `user-p12.sh`. Evidence: `server-p12.sh:44`, `user-p12.sh:46`, `test/test-p12-certs.sh:19-20`.
 
+  **Suggestion.** An export password is optional. The script verifies the new `.p12` with the same choice it just used, and the docs name the scripts that exist.
+
+  `server-p12.sh` and `user-p12.sh` ask for an export password and accept an empty answer. Empty means `-passout pass:`, so the file opens without a prompt. That is the file a client can load on a site it polls every minute. A non-empty answer is for a store a person unlocks, such as a mail client. Verification uses that same value, including empty. It does not read `TEST_PASSPHRASE`. The password is not written to `.env`.
+
+  README and the Copilot instructions name `server-p12.sh` and `user-p12.sh`. Tests cover an empty export and an export with a password.
+
 ## Medium
 
 - [ ] **7. Expiry mail does not follow the design described in the README.** The script reads an email from the certificate and then sends only to `EMAIL` from `.env`. Before it sends, it calls `curl` against `ifconfig.me` and requires reverse DNS for that address. The MX host it looks up is not the host it delivers to. `sendmail` is always invoked with `-v`. A non-zero `sendmail` status is reported as sent unless the output contains the text `*** Error code`. README and `REVIEW.md` describe per-certificate recipients and TLS SMTP with client-certificate authentication. The script sets `-oMtls=client` and does not configure a client certificate. Sourcing `.env` also executes whatever shell is in that file. Evidence: `check-expiry.sh:69-83` reads the certificate email. Lines 137-191 send to `EMAIL`. Line 160 calls `ifconfig.me`.
