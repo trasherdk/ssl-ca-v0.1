@@ -28,8 +28,9 @@ print_step "Checking for requirements..."
 servername="$(openssl x509 -noout  -in "${CERTDIR}/${SERVER}.crt" -subject | sed -e 's;.*CN=;;' -e 's;/Em.*;;')"
 caname="$(openssl x509 -noout  -in "${CA}/ca.crt" -subject | sed -e 's;.*CN=;;' -e 's;/Em.*;;')"
 
-# Package it.
+# Package it. An empty password is valid.
 print_step "Exporting to PKCS#12..."
+read_p12_export_pass
 openssl pkcs12 \
         -export \
         -in "${CERTDIR}/${SERVER}.crt" \
@@ -37,11 +38,12 @@ openssl pkcs12 \
         -certfile "${CA}/ca.crt" \
         -name "$servername" \
         -caname "$caname" \
+        -passout "pass:${P12_EXPORT_PASS}" \
         -out "${CERTDIR}/${SERVER}.p12"
 
-# Verify the exported file
+# Verify the exported file with the same password, including empty.
 print_step "Verifying PKCS#12 contents..."
-if ! openssl pkcs12 -in "${CERTDIR}/${SERVER}.p12" -info -noout -passin "pass:${TEST_PASSPHRASE}"; then
+if ! openssl pkcs12 -in "${CERTDIR}/${SERVER}.p12" -info -noout -passin "pass:${P12_EXPORT_PASS}"; then
     print_error "Failed to verify PKCS#12 file"
 fi
 

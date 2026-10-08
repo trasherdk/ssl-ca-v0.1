@@ -70,13 +70,15 @@ OCSP, a web UI, a general audit log, and a CRL cron are already in `TODO.md` and
 
   Implemented. `new-sub-ca.sh` copies `scripts/revoke.sh` and `gen-root-ca-crl.sh`. A missing source file exits non-zero. `revoke-cert.sh` remains the sub-CA revoke command.
 
-- [ ] **6. PKCS#12 export verifies with `TEST_PASSPHRASE` after writing the file.** Export prompts for a password. Verification then opens the new `.p12` with `pass:${TEST_PASSPHRASE}`. The test suite exports that variable, so tests pass. An operator who does not set it gets a failed script after the `.p12` already exists. README and the Copilot instructions still tell the operator to run `./p12.sh`, which is not a script in this tree. The live scripts are `server-p12.sh` and `user-p12.sh`. Evidence: `server-p12.sh:44`, `user-p12.sh:46`, `test/test-p12-certs.sh:19-20`.
+- [x] **6. PKCS#12 export verifies with `TEST_PASSPHRASE` after writing the file.** Export prompts for a password. Verification then opens the new `.p12` with `pass:${TEST_PASSPHRASE}`. The test suite exports that variable, so tests pass. An operator who does not set it gets a failed script after the `.p12` already exists. README and the Copilot instructions still tell the operator to run `./p12.sh`, which is not a script in this tree. The live scripts are `server-p12.sh` and `user-p12.sh`. Evidence: `server-p12.sh:44`, `user-p12.sh:46`, `test/test-p12-certs.sh:19-20`.
 
   **Suggestion.** An export password is optional. The script verifies the new `.p12` with the same choice it just used, and the docs name the scripts that exist.
 
   `server-p12.sh` and `user-p12.sh` ask for an export password and accept an empty answer. Empty means `-passout pass:`, so the file opens without a prompt. That is the file a client can load on a site it polls every minute. A non-empty answer is for a store a person unlocks, such as a mail client. Verification uses that same value, including empty. It does not read `TEST_PASSPHRASE`. The password is not written to `.env`.
 
   README and the Copilot instructions name `server-p12.sh` and `user-p12.sh`. Tests cover an empty export and an export with a password.
+
+  Implemented. Both export scripts ask for a password and accept an empty answer. Verification uses that same value. The README names `server-p12.sh` and `user-p12.sh`. The agent note that also named those scripts was removed; it described the wrong mail command and a test script that is not in the tree.
 
 ## Medium
 
@@ -96,7 +98,7 @@ OCSP, a web UI, a general audit log, and a CRL cron are already in `TODO.md` and
 
 - [ ] **14. The expiry tests marked done are stale, and the runner never calls them.** `TODO.md` marks expiry testing complete. `run-tests.sh` does not include `test-check-expiry.sh` or `test-expiry.sh`. `test-check-expiry.sh` looks for `certs/test-server.crt` and the phrase `will expire`. Live paths are `certs/<name>/<name>.crt`, and `check-expiry.sh` reports days remaining. `test-expiry.sh` needs a live mail path. `test-sub-ca.sh` also requires every copied script and directory to be owned by `root`, so the same test fails for any other user. Evidence: `run-tests.sh:25-42`. `test/test-check-expiry.sh:33-35` and `:66-74`. `TODO.md` items 1 and 10. `test/test-sub-ca.sh:282-298`.
 
-- [ ] **15. README, REVIEW, and the agent instructions describe a different CA than the scripts.** README says a restricted sub-CA has `CA:FALSE`. The extension in `new-sub-ca.sh` is `CA:true, pathlen:0`, and `test-sub-ca.sh` asserts `CA:TRUE`. README says pathlen is calculated from the parent certificate. The script picks one of two fixed extensions. README's testing section documents only `test-root-ca.sh`. `REVIEW.md` says client-certificate SMTP is implemented and cites `test-email.sh`, which is not in the tree. The Copilot instructions still name `p12.sh` and the `mail` command. Evidence: `README.md` lines 12, 43, 84, and 194-206. `new-sub-ca.sh:67-71` and `:140-141`. `test/test-sub-ca.sh:180-184`. `REVIEW.md` lines 24-29.
+- [ ] **15. README, REVIEW, and the agent instructions describe a different CA than the scripts.** README says a restricted sub-CA has `CA:FALSE`. The extension in `new-sub-ca.sh` is `CA:true, pathlen:0`, and `test-sub-ca.sh` asserts `CA:TRUE`. README says pathlen is calculated from the parent certificate. The script picks one of two fixed extensions. README's testing section documents only `test-root-ca.sh`. `REVIEW.md` says client-certificate SMTP is implemented and cites `test-email.sh`, which is not in the tree. Evidence: `README.md` lines 12, 43, 84, and 194-206. `new-sub-ca.sh:67-71` and `:140-141`. `test/test-sub-ca.sh:180-184`. `REVIEW.md` lines 24-29.
 
 ## Low
 

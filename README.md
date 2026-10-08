@@ -93,7 +93,7 @@ To create a Sub-CA, use the `new-sub-ca.sh` script with the appropriate option:
    - `new-server-cert.sh` and `sign-server-cert.sh` for server certificates.
    - `new-user-cert.sh` and `sign-user-cert.sh` for user certificates.
    - `revoke-cert.sh` to revoke certificates.
-   - `p12.sh` to package user certificates into `.p12` files.
+   - `server-p12.sh` and `user-p12.sh` to package certificates into `.p12` files. An empty export password leaves the file openable without a prompt.
    - `new-sub-ca.sh` to create further sub-CAs (if allowed).
 
 3. **Revoke Certificates in the Sub-CA**:
@@ -184,7 +184,8 @@ sub-CAs/
     ├── new-server-cert.sh     # Script for creating server certificates
     ├── sign-server-cert.sh    # Script for signing server certificates
     ├── revoke-cert.sh         # Script for revoking certificates
-    ├── p12.sh                 # Script for packaging certificates into .p12 files
+    ├── server-p12.sh          # Package a server certificate into a .p12 file
+    ├── user-p12.sh            # Package a user certificate into a .p12 file
 ```
 
 ## Testing
@@ -223,7 +224,7 @@ The project includes automated test scripts to verify the correct operation of t
    ```sh
    ./new-user-cert.sh user@example.com
    ./sign-user-cert.sh user@example.com
-   ./p12.sh user@example.com
+   ./user-p12.sh user@example.com
    ```
 
 4. Revoke a certificate:
@@ -263,7 +264,7 @@ The project includes automated test scripts to verify the correct operation of t
    ```sh
    ./new-user-cert.sh user@subdomain.com
    ./sign-user-cert.sh user@subdomain.com
-   ./p12.sh user@subdomain.com
+   ./user-p12.sh user@subdomain.com
    ```
 
 6. Revoke a certificate in the sub-CA:

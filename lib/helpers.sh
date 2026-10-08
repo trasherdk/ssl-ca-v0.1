@@ -29,6 +29,16 @@ print_soft_error() {
     return 1
 }
 
+# Optional PKCS#12 export password. Empty is valid and leaves the file
+# openable without a prompt. The value stays in P12_EXPORT_PASS only.
+read_p12_export_pass() {
+    printf "Export password (empty for none): " >/dev/tty
+    stty -echo </dev/tty
+    IFS= read -r P12_EXPORT_PASS </dev/tty
+    stty echo </dev/tty
+    printf "\n" >/dev/tty
+}
+
 # Fill KEY_PASS_ARGS for openssl -passin or -passout.
 # OPENSSL_PASSIN is passed through as-is (for example pass:secret or env:VAR).
 # CA_PASSPHRASE is the raw secret. With neither set, OpenSSL prompts.
