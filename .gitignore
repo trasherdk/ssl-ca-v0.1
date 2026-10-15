@@ -7,3 +7,4 @@ config/*
 CRL/*
 test-environment
 sub-CAs
+__pycache__
