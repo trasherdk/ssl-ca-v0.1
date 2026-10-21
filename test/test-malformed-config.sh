@@ -36,7 +36,7 @@ ENV_BACKUP="${TEST_DIR}/.env.bak"
 echo "THIS IS NOT VALID BASH ===###@@@" > "${BASE}/.env"
 echo "ROOT_CA_THRESHOLD=!!!" >> "${BASE}/.env"
 
-# check-expiry.sh should survive a malformed .env (it sources it)
+# check-expiry.sh should survive a malformed .env (it does not source it)
 output=$("${BASE}/check-expiry.sh" 2>&1)
 RC=$?
 # It may exit non-zero or produce an error — either is acceptable;

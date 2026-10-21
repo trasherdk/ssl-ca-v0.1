@@ -1,7 +1,7 @@
 # TODO - Planned Improvements and Missing Features
 
 ## Checklist
-- [x] 1. Certificate Expiry Notification and Thresholds
+- [ ] 1. Certificate Expiry Notification and Thresholds
 - [x] 2. Sub-CA Pathlen Constraints
 - [ ] 3. CRL Management
 - [ ] 4. Audit Logs
@@ -18,24 +18,14 @@
 - [ ] 12. Periodic CRL Automation
 - [ ] 13. Create Svelte 5/SvelteKit Web Interface
 
-## 1. Certificate Expiry Notification and Thresholds ✓
+## 1. Certificate Expiry Notification and Thresholds
 - Add a script to check for certificates nearing expiration.
 - Notify the administrator for both root CA, sub-CAs, and issued certificates.
-- **Status**: Completed and Verified.
-  - The `check-expiry.sh` script has:
-    - Configurable thresholds via environment variables
-    - Email extraction from certificates (with fallback to .env)
-    - Proper error handling and logging
-    - Independent operation in Sub-CAs
-    - TLS-encrypted SMTP with client certificate authentication
-    - Debug mode for troubleshooting (-d flag)
-    - Clean, concise output for normal operation
-    - Verified email delivery with test-expiry.sh
-  - Future enhancements (optional):
-    - Multiple notification recipients
-    - Rate limiting for notifications
-    - HTML email format option
-    - Configurable notification thresholds
+- **Status**: Not done. `check-expiry.sh` exists and is meant to run from cron. It should send a warning when a certificate is inside its threshold. The live mail tests used `--force`, which sends even when the certificate is not close to expiry.
+  - Thresholds are read from `.env` (`ROOT_CA_THRESHOLD`, `SUB_CA_THRESHOLD`, `CERT_THRESHOLD`), with defaults of 90, 60, and 30 days.
+  - The script reads an email from the certificate and does not use it. Every notice goes to `EMAIL`.
+  - README says `EMAIL` is the fallback when the certificate has no address. It may instead have been only the address used in tests. Leave the recipient as it is until that is settled.
+  - Nothing installs a cron entry. Delivery still depends on `ifconfig.me` and reverse DNS, and a failed `sendmail` can be reported as sent. See finding 7.
 
 ## 2. Sub-CA Pathlen Constraints ✓
 - Implement proper pathlen constraints for restricted sub-CAs.

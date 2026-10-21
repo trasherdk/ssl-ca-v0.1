@@ -56,9 +56,18 @@ if [ ! -f "${CA_DIR}/ca.crt" ] || [ ! -f "${CA_DIR}/ca.key" ]; then
     exit 1
 fi
 
-# Source environment variables for default values
+# Read settings from .env. The file is not sourced.
+source "${BASE}/lib/helpers.sh" || exit 1
 if [ -f "${BASE}/.env" ]; then
-    source "${BASE}/.env"
+    _val=$(get_local_key EMAIL "${BASE}/.env") || _val=""
+    [ -n "${_val}" ] && EMAIL="${_val}"
+    _val=$(get_local_key ROOT_CA_THRESHOLD "${BASE}/.env") || _val=""
+    [ -n "${_val}" ] && ROOT_CA_THRESHOLD="${_val}"
+    _val=$(get_local_key SUB_CA_THRESHOLD "${BASE}/.env") || _val=""
+    [ -n "${_val}" ] && SUB_CA_THRESHOLD="${_val}"
+    _val=$(get_local_key CERT_THRESHOLD "${BASE}/.env") || _val=""
+    [ -n "${_val}" ] && CERT_THRESHOLD="${_val}"
+    unset _val
 fi
 
 # Default thresholds if not set in .env
@@ -179,16 +188,16 @@ check_certificate() {
         local date_header=$(date -R)
         local message_id="<$(date +%Y%m%d%H%M%S).$$@${hostname}>"
 
-        # Send using sendmail with proper headers and verbose output
-        local sendmail_opts="-i -f ssl-ca@${hostname} -F 'SSL CA Monitor' -S ssl-ca@${hostname} -oem -oi -om"
-        # Add TLS settings
-        sendmail_opts="${sendmail_opts} -oMtls=client"
-        # Always use verbose mode for better debugging
-        sendmail_opts="${sendmail_opts} -v"
-
-        # Use a temporary file for sendmail output
+        # Pass each flag as its own argument. An unquoted string was split
+        # on spaces, and Sendmail then treated the pieces as recipients.
+        # -f is the envelope sender. -S is not a Sendmail option.
         local sendmail_output=$(mktemp)
-        if echo -e "From: SSL CA Monitor <${from_address}>\nDate: ${date_header}\nMessage-ID: ${message_id}\nTo: ${EMAIL}\nReply-To: ${from_address}\nX-Mailer: SSL CA Monitor\nX-Priority: 1\nImportance: High\nPrecedence: high\nAuto-Submitted: auto-generated\nMIME-Version: 1.0\nContent-Type: text/plain; charset=us-ascii\nSubject: Certificate Expiry Warning: ${cert_name} (${days_remaining} days)\n\n${message}" | sendmail ${sendmail_opts} "${EMAIL}" 2>${sendmail_output}; then
+        if echo -e "From: SSL CA Monitor <${from_address}>\nDate: ${date_header}\nMessage-ID: ${message_id}\nTo: ${EMAIL}\nReply-To: ${from_address}\nX-Mailer: SSL CA Monitor\nX-Priority: 1\nImportance: High\nPrecedence: high\nAuto-Submitted: auto-generated\nMIME-Version: 1.0\nContent-Type: text/plain; charset=us-ascii\nSubject: Certificate Expiry Warning: ${cert_name} (${days_remaining} days)\n\n${message}" | sendmail \
+            -i \
+            -f "${from_address}" \
+            -F "SSL CA Monitor" \
+            -oem -oi -om \
+            "${EMAIL}" 2>"${sendmail_output}"; then
             status_msg "[INFO] Sent expiry notification for ${cert_name} to ${EMAIL}"
             rm -f "${sendmail_output}"
         else

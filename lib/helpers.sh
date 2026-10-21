@@ -52,17 +52,27 @@ set_key_pass_args() {
     fi
 }
 
+# Read one KEY=value line. The value is a single token, optionally quoted.
+# Shell in the file is not executed. Returns 1 when the key is missing or
+# the value contains anything outside the token set.
+get_local_key() {
+    local KEY=$1
+    local FILE=$2
+    local VAL
+    VAL=$(sed -En "s/^${KEY}[[:blank:]]*=[[:blank:]]*\"?([A-Za-z0-9._:/@+-]+)\"?$/\1/p" "${FILE}")
+    if [ "${VAL}" = "" ]; then
+        return 1
+    fi
+    printf '%s\n' "${VAL}"
+}
+
 # CRL_URL in the signing CA's .env names that CA's list. An exported value is
 # used only when the file does not set one.
 load_ca_env() {
     local env_file="$1"
     local file_url=""
     if [ -f "${env_file}" ]; then
-        file_url=$(awk -F= '/^[[:space:]]*CRL_URL=/{print substr($0, index($0,"=")+1); exit}' "${env_file}")
-        file_url="${file_url#\"}"
-        file_url="${file_url%\"}"
-        file_url="${file_url#\'}"
-        file_url="${file_url%\'}"
+        file_url=$(get_local_key CRL_URL "${env_file}") || file_url=""
     fi
     if [ -n "${file_url}" ]; then
         CRL_URL="${file_url}"
